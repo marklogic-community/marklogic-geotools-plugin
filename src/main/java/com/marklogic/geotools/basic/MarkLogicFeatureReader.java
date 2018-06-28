@@ -43,13 +43,14 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private QueryDefinition query;
     
     private long index = 1;
-    private long pageLength = 100;
+    private long pageLength = 20;
     private DocumentPage currentPage = null;
     
     private JSONDocumentManager docMgr;
     
     MarkLogicFeatureReader(ContentState contentState, Query query) throws IOException {
         this.state = contentState;
+        System.out.println("FeatureReader Query:\n" + query.toString());
         
         MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
         client = ml.getClient(); // this may throw an IOException if it could not connect

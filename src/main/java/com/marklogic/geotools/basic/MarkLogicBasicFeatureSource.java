@@ -12,6 +12,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import java.io.IOException;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -20,36 +21,109 @@ import org.opengis.filter.Filter;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.document.DocumentPage;
 import com.marklogic.client.document.JSONDocumentManager;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.JacksonHandle;
 import com.marklogic.client.io.SearchHandle;
 import com.marklogic.client.io.StringHandle;
+import com.marklogic.client.io.ValuesHandle;
 import com.marklogic.client.io.marker.JSONReadHandle;
+import com.marklogic.client.query.AggregateResult;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
+import com.marklogic.client.query.RawStructuredQueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.query.StructuredQueryDefinition;
+import com.marklogic.client.query.ValuesDefinition;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
+	private String definingQuery;
+	private JsonNode dbMetadata;
+	
 	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query) {
 		super(entry, query);
-		// TODO Auto-generated constructor stub
+		retrieveDBMetadata(entry, query);
 	}
 	
+	protected void retrieveDBMetadata(ContentEntry entry, Query query) {
+		// create a query builder for the query options
+//	    StructuredQueryBuilder qb = new StructuredQueryBuilder();
+//	    StructuredQueryDefinition querydef = qb.and(
+//	    		qb.collection("typeDescriptors"),
+//	    		qb.value(qb.jsonProperty("namespace"), entry.getName().getNamespaceURI()),
+//	    		qb.value(qb.jsonProperty("typeName"), entry.getName().getLocalPart())
+//	    	    );
+	    JSONDocumentManager docMgr = getDataStore().getClient().newJSONDocumentManager();
+	    JacksonHandle handle = new JacksonHandle();
+	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
+	    dbMetadata = handle.get();
+	    definingQuery = dbMetadata.get("definingQuery").asText();
+	}
 	
 	public MarkLogicDataStore getDataStore() {
 		return (MarkLogicDataStore) super.getDataStore();
 	}
 	
-	//make this a UDF later, for now just return the whole earth
+	//make this a UDF later, for now just return values we've poked into each doc
 	@Override
 	protected ReferencedEnvelope getBoundsInternal(Query query) throws IOException {
-		// TODO Auto-generated method stub
-		return new ReferencedEnvelope(-180.0, 180.0, -90.0, 90.0, DefaultGeographicCRS.WGS84);
+		System.out.println("*******************************************************************");
+		System.out.println("in MarkLogicBasicFeatureSource:getBoundsInternal");
+		
+        DatabaseClient client = getDataStore().getClient();
+        try {
+        	QueryManager qm = client.newQueryManager();
+        	
+        	StructuredQueryBuilder b = qm.newStructuredQueryBuilder();
+        	
+        	StringHandle rawHandle = 
+        		    new StringHandle("{\"search\":{\"query\":" + definingQuery + "}}").withFormat(Format.JSON);
+        	System.out.println("rawHandle:\n" + rawHandle.get());
+        	RawCombinedQueryDefinition querydef =
+        		    qm.newRawCombinedQueryDefinition(rawHandle);
+
+        	ValuesDefinition vdef = qm.newValuesDefinition("box-west", "geotools");
+        	vdef.setQueryDefinition(querydef);
+        	vdef.setAggregate("min");
+        	
+        	ValuesHandle westH = qm.values(vdef, new ValuesHandle());
+        	float west = westH.getAggregate("min").get("xs:float", Float.class);
+        	
+        	vdef = qm.newValuesDefinition("box-east", "geotools");
+        	vdef.setQueryDefinition(querydef);
+        	vdef.setAggregate("max");
+        	ValuesHandle eastH = qm.values(vdef, new ValuesHandle());
+        	float east = eastH.getAggregate("max").get("xs:float", Float.class);
+        	
+        	vdef = qm.newValuesDefinition("box-south", "geotools");
+        	vdef.setQueryDefinition(querydef);
+        	vdef.setAggregate("min");
+        	ValuesHandle southH = qm.values(vdef, new ValuesHandle());
+        	float south = southH.getAggregate("min").get("xs:float", Float.class);
+        	
+        	vdef = qm.newValuesDefinition("box-north", "geotools");
+        	vdef.setQueryDefinition(querydef);
+        	vdef.setAggregate("max");
+        	ValuesHandle northH = qm.values(vdef, new ValuesHandle());
+        	float north = northH.getAggregate("max").get("xs:float", Float.class);
+        	
+        	System.out.println("west: " + west);
+        	System.out.println("east: " + east);
+        	System.out.println("north: " + north);
+        	System.out.println("south: " + south);
+        	System.out.println("*******************************************************************");
+    		
+        	return new ReferencedEnvelope(west, east, south, north, DefaultGeographicCRS.WGS84);
+        } 
+        catch (Exception ex) {
+        	ex.printStackTrace();
+        	return null;
+        }
 	}
 
 	@Override
@@ -68,10 +142,15 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
                 qm.search(queryDef, resultsHandle);
                 int count = (int) resultsHandle.getTotalResults();
                 return count;
-            } finally {
-            	
+            } 
+            catch (Exception ex) {
+            	ex.printStackTrace();
+            	return -1;
+            }
+            finally {
             }
         }
+		System.out.println("Query is " + query.toString() + "; feature by feature count required for MarkLogic driver");
         return -1; // feature by feature scan required to count records
 	}
 
@@ -83,14 +162,16 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	@Override
 	protected SimpleFeatureType buildFeatureType() throws IOException {
+		if (dbMetadata == null) {
+			retrieveDBMetadata(this.entry, this.query);
+		}
+		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
         builder.setName(entry.getName());
+        builder.setSRS( "EPSG:4326" );
+        builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
-        JSONDocumentManager docMgr = getDataStore().getClient().newJSONDocumentManager();
-        JacksonHandle handle = new JacksonHandle();
-        docMgr.read("geojson_typeDescriptor.json", handle);
-        JsonNode json = handle.get();
-        JsonNode schema = json.get("schema");
+        JsonNode schema = dbMetadata.get("schema");
         
         for (JsonNode n : schema) {
         	String name = n.get("name").asText();
@@ -105,6 +186,9 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
         		}
         		else if (geoType.contentEquals("polygon")) {
         			builder.add(name, Polygon.class);
+        		}
+        		else if (geoType.contentEquals("MultiPolygon")) {
+        			builder.add(name, MultiPolygon.class);
         		}
         	}
         	else if (type.contentEquals("string")) {

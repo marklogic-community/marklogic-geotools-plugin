@@ -108,7 +108,7 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("MarkLogicGeoJSON");
+        SimpleFeatureType type = store.getSchema("Clans");
 
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType count: " + type.getAttributeCount());
@@ -130,10 +130,10 @@ public class MarkLogicTest {
         System.out.println("attribute 0 binding: " + attributeDescriptor.getType().getBinding());
 
         // access by name
-        AttributeDescriptor cityDescriptor = type.getDescriptor("ADM2");
-        System.out.println("attribute 'ADM2'    name: " + cityDescriptor.getName());
-        System.out.println("attribute 'ADM2'    type: " + cityDescriptor.getType().toString());
-        System.out.println("attribute 'ADM2' binding: " + cityDescriptor.getType().getBinding());
+        AttributeDescriptor cityDescriptor = type.getDescriptor("CLAN");
+        System.out.println("attribute 'CLAN'    name: " + cityDescriptor.getName());
+        System.out.println("attribute 'CLAN'    type: " + cityDescriptor.getType().toString());
+        System.out.println("attribute 'CLAN' binding: " + cityDescriptor.getType().getBinding());
 
         // default geometry
         GeometryDescriptor geometryDescriptor = type.getGeometryDescriptor();
@@ -149,6 +149,23 @@ public class MarkLogicTest {
     }
     
     @Test
+    public void testBounds() throws Exception {
+        System.out.println("testBounds start\n");
+        Properties p = loadProperties();
+
+        DataStore store = DataStoreFinder.getDataStore(p);
+
+        SimpleFeatureType type = store.getSchema("Clans");
+
+        System.out.println("featureType  name: " + type.getName());
+        System.out.println("featureType count: " + type.getAttributeCount());
+        System.out.println("featureType bounds: " + store.getFeatureSource("Clans").getBounds());
+
+        // example2 end
+        System.out.println("\ntestBounds end\n");
+    }
+    
+    //@Test
     public void example3() throws Exception {
         System.out.println("example3 start\n");
         long startTime = System.currentTimeMillis();
@@ -156,7 +173,7 @@ public class MarkLogicTest {
         
         DataStore datastore = DataStoreFinder.getDataStore(p);
 
-        Query query = new Query("MarkLogicGeoJSON");
+        Query query = new Query("http://marklogic.com:Clans");
 
         System.out.println("open feature reader");
         FeatureReader<SimpleFeatureType, SimpleFeature> reader =
@@ -165,7 +182,7 @@ public class MarkLogicTest {
             int count = 0;
             while (reader.hasNext()) {
                 SimpleFeature feature = reader.next();
-                System.out.println("  " + feature.getID() + " " + feature.getAttribute("ADM2"));
+                System.out.println("  " + feature.getID() + " " + feature.getAttribute("ADM1"));
                 count++;
             }
             System.out.println("close feature reader");

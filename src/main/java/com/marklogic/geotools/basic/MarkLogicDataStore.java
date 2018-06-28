@@ -2,6 +2,8 @@ package com.marklogic.geotools.basic;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.geotools.data.Query;
@@ -24,6 +26,9 @@ import com.marklogic.client.io.Format;
 import com.marklogic.client.io.InputStreamHandle;
 import com.marklogic.client.io.SearchHandle;
 import com.marklogic.client.io.StringHandle;
+import com.marklogic.client.io.TuplesHandle;
+import com.marklogic.client.io.ValuesHandle;
+import com.marklogic.client.query.CountedDistinctValue;
 import com.marklogic.client.query.MatchDocumentSummary;
 import com.marklogic.client.query.MatchLocation;
 import com.marklogic.client.query.MatchSnippet;
@@ -32,6 +37,9 @@ import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.query.StructuredQueryDefinition;
+import com.marklogic.client.query.Tuple;
+import com.marklogic.client.query.TypedDistinctValue;
+import com.marklogic.client.query.ValuesDefinition;
 import com.marklogic.client.MarkLogicServerException;
 
 public class MarkLogicDataStore extends ContentDataStore {
@@ -48,13 +56,42 @@ public class MarkLogicDataStore extends ContentDataStore {
 	
 	//Update this to return a better description of our data, this is just a placeholder for now
 	protected List<Name> createTypeNames() throws IOException {
-        Name typeName = new NameImpl("MarkLogicGeoJSON");
-        return Collections.singletonList(typeName);
+		
+		System.out.println("**************************************************************************");
+		System.out.println("createTypeNames called!");
+		System.out.println("**************************************************************************");
+		
+		QueryManager queryMgr = client.newQueryManager();
+		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
+		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", "geotools");
+		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
+		TuplesHandle results = queryMgr.tuples(vdef, new TuplesHandle());
+		ArrayList<Name> nameList = new ArrayList<Name>();
+		Tuple[] tuples = results.getTuples();
+		
+		for (Tuple t : tuples) {
+			//Name n = new NameImpl("http://www.opengeospatial.net/cite", v.get("string", String.class));
+			//nameList.add(n);
+			String ns = t.getValues()[0].get(String.class);
+			String localname = t.getValues()[1].get(String.class);
+			Name n = new NameImpl(ns, localname);
+			nameList.add(n);
+			System.out.println("**************************************************************************");
+			System.out.println("Adding " + n.toString() + " to typeNames");
+			System.out.println("**************************************************************************");
+			
+		}
+		
+		System.out.println("**************************************************************************");
+		System.out.println("Names returned: " + Arrays.toString(nameList.toArray()));
+		System.out.println("**************************************************************************");
+		return nameList;
     }
 	
 	@Override
     protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
-        return new MarkLogicBasicFeatureSource(entry, Query.ALL);
+        System.out.println("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
+		return new MarkLogicBasicFeatureSource(entry, Query.ALL);
     }
 	
 

@@ -119,7 +119,8 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
         String database = (String) ML_DATABASE_PARAM.lookUp(params);
         
         SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-        return new MarkLogicDataStore(host, port, c, database);
+        MarkLogicDataStore ds = new MarkLogicDataStore(host, port, c, database);
+        return ds;
 	}
 
 	@Override
