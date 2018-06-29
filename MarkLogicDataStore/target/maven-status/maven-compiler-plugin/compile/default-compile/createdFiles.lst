@@ -1,0 +1,4 @@
+com/marklogic/geotools/basic/MarkLogicDataStoreFactory.class
+com/marklogic/geotools/basic/MarkLogicDataStore.class
+com/marklogic/geotools/basic/MarkLogicFeatureReader.class
+com/marklogic/geotools/basic/MarkLogicBasicFeatureSource.class
