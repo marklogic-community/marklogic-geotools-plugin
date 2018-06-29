@@ -8,10 +8,13 @@ import java.util.NoSuchElementException;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.document.DocumentPage;
 import com.marklogic.client.document.JSONDocumentManager;
+import com.marklogic.client.io.Format;
 import com.marklogic.client.io.InputStreamHandle;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
+import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.document.DocumentRecord;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -48,7 +51,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     
     private JSONDocumentManager docMgr;
     
-    MarkLogicFeatureReader(ContentState contentState, Query query) throws IOException {
+    MarkLogicFeatureReader(ContentState contentState, Query query, String mlQuery) throws IOException {
         this.state = contentState;
         System.out.println("FeatureReader Query:\n" + query.toString());
         
@@ -64,7 +67,19 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
   		    "</options>";
         QueryManager queryMgr = client.newQueryManager();
         
-        this.query = ml.createMarkLogicQueryDefinition(query, queryMgr, options);
+        this.query = createMarkLogicQueryDefinition(query, queryMgr, options, mlQuery);
+    }
+    
+    private QueryDefinition createMarkLogicQueryDefinition(Query query, QueryManager queryMgr, String options, String definingQuery) {
+    	StructuredQueryBuilder b = queryMgr.newStructuredQueryBuilder();
+    	
+    	StringHandle rawHandle = 
+    		    new StringHandle("{\"search\":{\"query\":" + definingQuery + "}}").withFormat(Format.JSON);
+    	System.out.println("rawHandle:\n" + rawHandle.get());
+    	RawCombinedQueryDefinition querydef =
+    		    queryMgr.newRawCombinedQueryDefinition(rawHandle);
+    	
+    	return querydef;
     }
     
 	@Override
@@ -72,6 +87,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		return (SimpleFeatureType) state.getFeatureType();
 	}
 
+	
 	@Override
 	public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
 		SimpleFeature feature;

@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
-	private String definingQuery;
+	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
 	
 	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query) {
@@ -62,7 +62,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	    JacksonHandle handle = new JacksonHandle();
 	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
 	    dbMetadata = handle.get();
-	    definingQuery = dbMetadata.get("definingQuery").asText();
+	    System.out.println("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
+	    definingQuery = dbMetadata.get("definingQuery");
 	}
 	
 	public MarkLogicDataStore getDataStore() {
@@ -82,7 +83,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
         	StructuredQueryBuilder b = qm.newStructuredQueryBuilder();
         	
         	StringHandle rawHandle = 
-        		    new StringHandle("{\"search\":{\"query\":" + definingQuery + "}}").withFormat(Format.JSON);
+        		    new StringHandle("{\"search\":{\"query\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
         	System.out.println("rawHandle:\n" + rawHandle.get());
         	RawCombinedQueryDefinition querydef =
         		    qm.newRawCombinedQueryDefinition(rawHandle);
@@ -132,22 +133,25 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
             DatabaseClient client = getDataStore().getClient();
             try {
             	QueryManager qm = client.newQueryManager();
-            	String XML_OPTIONS = 
-            		    "<options xmlns=\"http://marklogic.com/appservices/search\">" +
-            		      "<return-results>false</return-results>" +
-            		    "</options>";
-            	QueryDefinition queryDef = getDataStore().createMarkLogicQueryDefinition(query, qm, XML_OPTIONS);
+            	String JSON_OPTIONS = "\"options\": {\"return-results\": false}";      	
+            	StringHandle rawHandle = 
+            		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "," + JSON_OPTIONS + "}}").withFormat(Format.JSON);
+            	System.out.println("rawHandle:\n" + rawHandle.get());
+            	RawCombinedQueryDefinition queryDef =
+            		    qm.newRawCombinedQueryDefinition(rawHandle);
+            	
+            	System.out.println("getCountInternal(): running query\n" + rawHandle.get());
             	SearchHandle resultsHandle = new SearchHandle();
                 // run the search
                 qm.search(queryDef, resultsHandle);
+                System.out.println(resultsHandle.getQueryCriteria().toString());
                 int count = (int) resultsHandle.getTotalResults();
+                System.out.println("getCountInternal(): query returned " + count + " results");
                 return count;
             } 
             catch (Exception ex) {
             	ex.printStackTrace();
             	return -1;
-            }
-            finally {
             }
         }
 		System.out.println("Query is " + query.toString() + "; feature by feature count required for MarkLogic driver");
@@ -157,7 +161,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
 		// TODO Auto-generated method stub
-		return new MarkLogicFeatureReader(getState(), query);
+		return new MarkLogicFeatureReader(getState(), query, definingQuery.toString());
 	}
 
 	@Override

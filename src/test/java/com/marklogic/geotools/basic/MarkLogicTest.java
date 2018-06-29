@@ -29,6 +29,7 @@ import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.FeatureReader;
+import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -111,7 +112,7 @@ public class MarkLogicTest {
         SimpleFeatureType type = store.getSchema("Clans");
 
         System.out.println("featureType  name: " + type.getName());
-        System.out.println("featureType count: " + type.getAttributeCount());
+        System.out.println("featureType attribute count: " + type.getAttributeCount());
 
         System.out.println("featuretype attributes list:");
         // access by list
@@ -157,8 +158,9 @@ public class MarkLogicTest {
 
         SimpleFeatureType type = store.getSchema("Clans");
 
+        FeatureSource fs = store.getFeatureSource("Clans");
         System.out.println("featureType  name: " + type.getName());
-        System.out.println("featureType count: " + type.getAttributeCount());
+        System.out.println("featureType count: " + fs.getCount(new Query("", Filter.INCLUDE)));
         System.out.println("featureType bounds: " + store.getFeatureSource("Clans").getBounds());
 
         // example2 end
