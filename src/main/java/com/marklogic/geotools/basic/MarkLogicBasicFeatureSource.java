@@ -7,38 +7,28 @@ import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Polygon;
-import java.io.IOException;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.filter.Filter;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.document.DocumentManager;
-import com.marklogic.client.document.DocumentPage;
 import com.marklogic.client.document.JSONDocumentManager;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.JacksonHandle;
 import com.marklogic.client.io.SearchHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.ValuesHandle;
-import com.marklogic.client.io.marker.JSONReadHandle;
-import com.marklogic.client.query.AggregateResult;
-import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
-import com.marklogic.client.query.RawStructuredQueryDefinition;
-import com.marklogic.client.query.StructuredQueryBuilder;
-import com.marklogic.client.query.StructuredQueryDefinition;
 import com.marklogic.client.query.ValuesDefinition;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
@@ -79,8 +69,6 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
         DatabaseClient client = getDataStore().getClient();
         try {
         	QueryManager qm = client.newQueryManager();
-        	
-        	StructuredQueryBuilder b = qm.newStructuredQueryBuilder();
         	
         	StringHandle rawHandle = 
         		    new StringHandle("{\"search\":{\"query\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);

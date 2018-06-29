@@ -4,8 +4,8 @@ package com.marklogic.geotools.basic;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
@@ -15,32 +15,16 @@ import org.opengis.feature.type.Name;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
-import com.marklogic.client.DatabaseClientFactory.Authentication;
-import com.marklogic.client.FailedRequestException;
-import com.marklogic.client.ForbiddenUserException;
-import com.marklogic.client.ResourceNotFoundException;
-import com.marklogic.client.ResourceNotResendableException;
-import com.marklogic.client.admin.QueryOptionsManager;
-import com.marklogic.client.document.XMLDocumentManager;
 import com.marklogic.client.io.Format;
-import com.marklogic.client.io.InputStreamHandle;
-import com.marklogic.client.io.SearchHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.TuplesHandle;
-import com.marklogic.client.io.ValuesHandle;
-import com.marklogic.client.query.CountedDistinctValue;
-import com.marklogic.client.query.MatchDocumentSummary;
-import com.marklogic.client.query.MatchLocation;
-import com.marklogic.client.query.MatchSnippet;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.query.StructuredQueryDefinition;
 import com.marklogic.client.query.Tuple;
-import com.marklogic.client.query.TypedDistinctValue;
 import com.marklogic.client.query.ValuesDefinition;
-import com.marklogic.client.MarkLogicServerException;
 
 public class MarkLogicDataStore extends ContentDataStore {
 	DatabaseClient client;
