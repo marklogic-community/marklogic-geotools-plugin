@@ -1,0 +1,5 @@
+{
+  "role-name" : "geotools-internal",
+  "description" : "Internal role used for amping",
+  "role" : [ "geotools-writer" ]
+}

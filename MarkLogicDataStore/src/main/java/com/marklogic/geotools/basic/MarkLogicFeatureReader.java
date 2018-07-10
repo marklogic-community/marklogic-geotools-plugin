@@ -112,6 +112,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 
 	private void readNextPage() {
 		InputStreamHandle handle = new InputStreamHandle();
+		System.out.println("readNextPage(): query: " + query.toString());
 		currentPage = docMgr.search(query, index, handle);
 	}
 	

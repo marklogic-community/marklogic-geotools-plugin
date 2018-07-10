@@ -1,0 +1,28 @@
+plugins {
+  id "net.saliman.properties" version "1.4.6"
+  id "com.marklogic.ml-gradle" version "3.3.0"
+}
+
+repositories {
+  jcenter()
+  maven { url "https://developer.marklogic.com/maven2/" }
+}
+
+configurations {
+  mlcp
+}
+
+dependencies {
+  mlcp "com.marklogic:mlcp:9.0.4"
+  mlcp files("lib")
+}
+
+task loadGeoToolsData(type: com.marklogic.gradle.task.MlcpTask) {
+  classpath = configurations.mlcp
+  command = "IMPORT"
+  database = mlAppConfig.contentDatabaseName
+  input_file_path = "data"
+  input_file_type = "archive"
+  username = "admin"
+  password = "admin"
+}

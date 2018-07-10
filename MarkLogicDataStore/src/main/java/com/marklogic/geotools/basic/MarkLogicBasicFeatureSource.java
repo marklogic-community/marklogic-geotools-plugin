@@ -71,7 +71,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
         	QueryManager qm = client.newQueryManager();
         	
         	StringHandle rawHandle = 
-        		    new StringHandle("{\"search\":{\"query\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
+        		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
         	System.out.println("rawHandle:\n" + rawHandle.get());
         	RawCombinedQueryDefinition querydef =
         		    qm.newRawCombinedQueryDefinition(rawHandle);

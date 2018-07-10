@@ -1,0 +1,35 @@
+<options xmlns="http://marklogic.com/appservices/search">
+  <values name="typeName">
+    <range type="xs:string" facet="false"> 
+      <json-property>typeName</json-property>
+    </range>
+  </values>
+  <values name="box-west">
+    <range type="xs:float" facet="false"> 
+      <field name="box-west"/>
+    </range>
+  </values>
+  <values name="box-east">
+    <range type="xs:float" facet="false"> 
+      <field name="box-east"/>
+    </range>
+  </values>
+  <values name="box-north">
+    <range type="xs:float" facet="false"> 
+      <field name="box-north"/>
+    </range>
+  </values>
+  <values name="box-south">
+    <range type="xs:float" facet="false"> 
+      <field name="box-south"/>
+    </range>
+  </values>
+  <tuples name="typeNamePlusNamespace">
+    <range type="xs:string" facet="false"> 
+      <json-property>namespace</json-property>
+    </range>
+    <range type="xs:string" facet="false"> 
+      <json-property>typeName</json-property>
+    </range>
+  </tuples>
+</options>
