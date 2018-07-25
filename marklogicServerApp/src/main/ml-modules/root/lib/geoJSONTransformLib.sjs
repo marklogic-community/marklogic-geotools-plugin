@@ -1,0 +1,65 @@
+'use strict';
+const geo = require('/MarkLogic/geospatial/geospatial');
+
+
+function wrapGeoJSON(geoJSON) {
+	var geoJSONObject;
+	if (xdmp.nodeKind(geoJSON) == 'document')
+		geoJSONObject = geoJSON.toObject();
+	else
+		geoJSONObject = geoJSON;
+
+	var ctsGeometries = geo.parse(geoJSONObject.geometry);
+	var centroids = [];
+	var boxWest = null;
+	var boxSouth = null;
+	var boxNorth = null;
+	var boxEast = null;
+
+	for (const g of ctsGeometries) {
+		centroids.push(geo.approxCenter(g));
+
+		try {
+		let box = geo.boundingBoxes(g, "box-percent=0");
+		let w = xs.float(cts.boxWest(box));
+		let s = xs.float(cts.boxSouth(box));
+		let n = xs.float(cts.boxNorth(box));
+		let e = xs.float(cts.boxEast(box));
+
+		if (boxWest == null || w < boxWest) boxWest = w;
+		if (boxSouth == null || s < boxSouth) boxSouth = s;
+		if (boxNorth == null || n > boxNorth) boxNorth = n;
+		if (boxEast == null || e > boxEast) boxEast = e;
+		}
+		catch (err) {
+			xdmp.log("Warning, bounding box calculation failed");
+		}
+	}
+
+	var envelope = {
+		geoJSON:geoJSONObject,
+		metadata: {
+			ctsRegion:ctsGeometries,
+			centroids:centroids,
+			bbox:{
+				"boxWest":boxWest,
+			    "boxSouth":boxSouth,
+			    "boxNorth":boxNorth,
+			    "boxEast":boxEast
+			}
+		}
+	};
+
+	return xdmp.unquote(xdmp.quote(envelope));
+};
+
+function mlcpTransform(content, context) {
+	if (xdmp.nodeKind(content.value) == 'document' &&
+      content.value.documentFormat == 'JSON') {
+		content.value = wrapGeoJSON(content.value);
+	}
+	return content;
+};
+
+exports.wrapGeoJSON = wrapGeoJSON;
+exports.transform = mlcpTransform;

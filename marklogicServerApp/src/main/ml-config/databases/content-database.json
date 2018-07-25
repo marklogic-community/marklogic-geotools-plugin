@@ -16,38 +16,62 @@
 	"invalid-values": "reject"
   } ],
   "field": [
+  	{
+		"field-name": "box-north", 
+		"field-path": [
+			{
+			"path": "/metadata/bbox/boxNorth", 
+			"weight": 1
+			}
+		], 
+		"stemmed-searches": "off", 
+		"word-searches": false, 
+		"fast-phrase-searches": false, 
+		"fast-case-sensitive-searches": false, 
+		"fast-diacritic-sensitive-searches": false
+	},
     {
-      "field-name": "box-west",
-      "metadata": "true",
-      "word-searches": false,
-      "fast-phrase-searches": false,
-      "fast-case-sensitive-searches": false,
-      "fast-diacritic-sensitive-searches": false
-    },
+		"field-name": "box-west", 
+		"field-path": [
+			{
+			"path": "/metadata/bbox/boxWest", 
+			"weight": 1
+			}
+		], 
+		"stemmed-searches": "off", 
+		"word-searches": false, 
+		"fast-phrase-searches": false, 
+		"fast-case-sensitive-searches": false, 
+		"fast-diacritic-sensitive-searches": false
+	},
     {
-      "field-name": "box-south",
-      "metadata": "true",
-      "word-searches": false,
-      "fast-phrase-searches": false,
-      "fast-case-sensitive-searches": false,
-      "fast-diacritic-sensitive-searches": false
-    },
+		"field-name": "box-east", 
+		"field-path": [
+			{
+			"path": "/metadata/bbox/boxEast", 
+			"weight": 1
+			}
+		], 
+		"stemmed-searches": "off", 
+		"word-searches": false, 
+		"fast-phrase-searches": false, 
+		"fast-case-sensitive-searches": false, 
+		"fast-diacritic-sensitive-searches": false
+	},
     {
-      "field-name": "box-east",
-      "metadata": "true",
-      "word-searches": false,
-      "fast-phrase-searches": false,
-      "fast-case-sensitive-searches": false,
-      "fast-diacritic-sensitive-searches": false
-    },
-    {
-      "field-name": "box-north",
-      "metadata": "true",
-      "word-searches": false,
-      "fast-phrase-searches": false,
-      "fast-case-sensitive-searches": false,
-      "fast-diacritic-sensitive-searches": false
-    },
+		"field-name": "box-south", 
+		"field-path": [
+			{
+			"path": "/metadata/bbox/boxSouth", 
+			"weight": 1
+			}
+		], 
+		"stemmed-searches": "off", 
+		"word-searches": false, 
+		"fast-phrase-searches": false, 
+		"fast-case-sensitive-searches": false, 
+		"fast-diacritic-sensitive-searches": false
+	},
     {
       "field-name": "",
       "include-root": true
@@ -80,6 +104,24 @@
       "field-name": "box-west",
       "collation": "",
       "range-value-positions": false,
+      "invalid-values": "reject"
+    }
+  ],
+  "geospatial-path-index": [
+	{
+	"path-expression": "/metadata/centroids", 
+	"coordinate-system": "wgs84", 
+	"point-format": "point", 
+	"range-value-positions": false, 
+	"invalid-values": "reject"
+	}
+  ],
+  "geospatial-region-path-index": [
+    {
+      "path-expression": "/metadata/ctsRegion",
+      "coordinate-system": "wgs84",
+      "units": "miles",
+      "geohash-precision": 4,
       "invalid-values": "reject"
     }
   ]
