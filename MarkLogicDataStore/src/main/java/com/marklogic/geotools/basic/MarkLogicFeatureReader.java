@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.document.DocumentPage;
 import com.marklogic.client.document.JSONDocumentManager;
+import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.InputStreamHandle;
 import com.marklogic.client.io.StringHandle;
@@ -58,6 +59,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
         MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
         client = ml.getClient(); // this may throw an IOException if it could not connect
         docMgr = client.newJSONDocumentManager();
+        docMgr.setReadTransform(new ServerTransform("geoJSONTransform"));
         
         docMgr.setPageLength(pageLength);
         String options = 
