@@ -9,6 +9,11 @@ function wrapGeoJSON(geoJSON) {
 	else
 		geoJSONObject = geoJSON;
 
+	if (!(geoJSONObject.hasOwnProperty("properties") && geoJSONObject.hasOwnProperty("geometry"))) {
+		//it's not really geoJSON, so just return the original input
+		return geoJSON;
+	}
+
 	var ctsGeometries = geo.parse(geoJSONObject.geometry);
 	var centroids = [];
 	var boxWest = null;
