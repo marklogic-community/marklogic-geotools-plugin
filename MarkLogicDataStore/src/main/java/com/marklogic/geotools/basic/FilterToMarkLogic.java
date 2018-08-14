@@ -2,6 +2,8 @@ package com.marklogic.geotools.basic;
 
 import org.apache.commons.collections4.IteratorUtils;
 import org.geotools.factory.CommonFactoryFinder;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.BinaryLogicOperator;
@@ -63,6 +65,7 @@ import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.query.StructuredQueryBuilder.GeospatialOperator;
+import com.marklogic.client.query.StructuredQueryBuilder.Point;
 import com.marklogic.client.query.StructuredQueryDefinition;
 
 public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
@@ -85,7 +88,7 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	protected FilterFactory2 ff;
 
-    /** The schmema the encoder will use */
+    /** The schema the encoder will use */
 	protected SimpleFeatureType featureType;
 
 	// MarkLogic DB variables
@@ -97,9 +100,9 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 		//this.client = client;
 		QueryManager qm = client.newQueryManager();
 		qb = qm.newStructuredQueryBuilder();
-//		qb.geoRegionPath( // TODO: should this be in the constructor or some other setter, or nowhere?
-//				qb.pathIndex("/metadata/ctsRegion"),
-//				StructuredQueryBuilder.CoordinateSystem.WGS84);
+		qb.geoRegionPath( // TODO: should this be in the constructor or some other setter, or nowhere?
+			qb.pathIndex("/metadata/ctsRegion"),
+			StructuredQueryBuilder.CoordinateSystem.WGS84);
 		ff = CommonFactoryFinder.getFilterFactory2();
 	}
 
@@ -332,28 +335,35 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	@Override
 	public Object visit(Intersects filter, Object extraData) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
-		
-//		qb.geoRegionPath( // TODO: should this be in the constructor?
-//				qb.pathIndex("/metadata/ctsRegion"),
-//				StructuredQueryBuilder.CoordinateSystem.WGS84);
-//		
-//		qb.geoRegionPath(qb.pathIndex("/metadata/ctsRegion"));
-//        StructuredQueryDefinition query = qb.geospatial(
-//        		qb.geoRegionPath(
-//        			qb.pathIndex("/envelope/cts-region"), 
-//                    StructuredQueryBuilder.CoordinateSystem.WGS84),
-//                GeospatialOperator.INTERSECTS, 
-//                qb.polygon(
-//                		qb.point(37.519087, -122.26346),
-//                    sqb.point(37.521299, -122.24805),
-//                    sqb.point(37.512279, -122.24462),
-//                    sqb.point(37.50336,  -122.24556),
-//                    sqb.point(37.506185, -122.25981),
-//                    sqb.point(37.513436, -122.26337),
-//                    sqb.point(37.519087, -122.26346)
-//                            ));
+		// create the Intersects filter with a PropertyName that doesn't matter and a
+		// geometry
+		// TODO: should this be pulled out similar to FilterToSql?
+		Expression e1 = filter.getExpression1();
+		Expression e2 = filter.getExpression2();
+
+		// swap operands if necessary
+		if (e1 instanceof Literal && e2 instanceof PropertyName) {
+			e1 = (PropertyName) filter.getExpression2();
+			e2 = (Literal) filter.getExpression1();
+		}
+
+		// we don't actually care what the property name is in this case - all we want
+		// is the geometry
+		// TODO: we probably want to pull this logic into its own class
+		Geometry geom = e2.evaluate(null, Geometry.class);
+		Coordinate[] coords = geom.getCoordinates();
+		int pointCount = geom.getNumPoints();
+		Point[] points = new Point[pointCount];
+		for (int i = 0; i < pointCount; i++) {
+			// TODO: this assumes Coordinate objects were created with lat/long - confirm
+			points[i] = qb.point(coords[i].x, coords[i].y);
+		}
+
+		StructuredQueryDefinition query = qb.geospatial(
+				qb.geoRegionPath(qb.pathIndex("/metadata/ctsRegion"), StructuredQueryBuilder.CoordinateSystem.WGS84),
+				GeospatialOperator.INTERSECTS,
+				qb.polygon(points));
+		return query;
 
 	}
 

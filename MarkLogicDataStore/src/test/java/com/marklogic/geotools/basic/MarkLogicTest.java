@@ -10,6 +10,13 @@ package com.marklogic.geotools.basic;
 
 import static org.junit.Assert.assertTrue;
 
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
+import com.marklogic.client.DatabaseClientFactory.DigestAuthContext;
+import com.marklogic.client.DatabaseClientFactory.SecurityContext;
+import com.marklogic.client.io.SearchHandle;
+import com.marklogic.client.query.QueryManager;
+import com.marklogic.client.query.StructuredQueryDefinition;
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.File;
 import java.io.FileReader;
@@ -41,6 +48,8 @@ import org.geotools.filter.text.cql2.CQL;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
 import org.junit.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -48,9 +57,32 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
+import org.opengis.filter.FilterFactory2;
+import org.opengis.filter.expression.Literal;
+import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.identity.FeatureId;
+import org.opengis.filter.spatial.Intersects;
 
 public class MarkLogicTest {
+
+	protected DatabaseClient client;
+	protected FilterFactory2 ff;
+	protected FilterToMarkLogic filterToMarklogic;
+
+	public MarkLogicTest() throws Exception {
+        // create client
+        Properties p = loadProperties();
+        String hostname = (String) p.get("hostname");
+        int port = (int) Integer.parseInt((String) p.get("port"));
+        String database = (String) p.get("database");
+        String username = (String) p.get("username");
+        String password = (String) p.get("password");
+        DigestAuthContext auth = new DatabaseClientFactory.DigestAuthContext(username, password);
+        client = DatabaseClientFactory.newClient(hostname, port, database, auth);
+
+        ff = CommonFactoryFinder.getFilterFactory2();
+        filterToMarklogic = new FilterToMarkLogic(client);
+	}
 
 	public Properties loadProperties() throws Exception {
 		InputStream propFile = MarkLogicTest.class.getResourceAsStream("marklogic.properties");
@@ -199,6 +231,27 @@ public class MarkLogicTest {
         // example3 end
         System.out.println("\nexample3 elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
+
+	@Test
+	public void testIntersects() throws Exception {
+		System.out.println("testIntersects start\n");
+		long startTime = System.currentTimeMillis();
+
+		Coordinate[] coordinates = new Coordinate[] {
+				// I'm using lat/long... is that correct?
+				new Coordinate(14.0, 43.0), new Coordinate(15.0, 43.0), new Coordinate(14.0, 44.0),
+				new Coordinate(15.0, 44.0), new Coordinate(14.0, 43.0), };
+		Intersects intersects = ff.intersects(ff.property("geom"), // this string doesn't actually matter
+				ff.literal(new GeometryFactory().createPolygon(coordinates)));
+		StructuredQueryDefinition query = (StructuredQueryDefinition) intersects.accept(filterToMarklogic, null);
+
+		QueryManager qm = client.newQueryManager();
+		SearchHandle results = new SearchHandle();
+		qm.search(query, results);
+		System.out.println(results.getTotalResults());
+		// testIntersects end
+		System.out.println("\ntestIntersects elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+	}
 /*
     @Test
     public void example4() throws Exception {
