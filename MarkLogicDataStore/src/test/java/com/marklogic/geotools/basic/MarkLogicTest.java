@@ -141,7 +141,7 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("Clans");
+        SimpleFeatureType type = store.getSchema("Land_Polygons");
 
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType attribute count: " + type.getAttributeCount());
@@ -163,10 +163,10 @@ public class MarkLogicTest {
         System.out.println("attribute 0 binding: " + attributeDescriptor.getType().getBinding());
 
         // access by name
-        AttributeDescriptor cityDescriptor = type.getDescriptor("CLAN");
-        System.out.println("attribute 'CLAN'    name: " + cityDescriptor.getName());
-        System.out.println("attribute 'CLAN'    type: " + cityDescriptor.getType().toString());
-        System.out.println("attribute 'CLAN' binding: " + cityDescriptor.getType().getBinding());
+        AttributeDescriptor cityDescriptor = type.getDescriptor("scalerank");
+        System.out.println("attribute 'Land_Polygons'    name: " + cityDescriptor.getName());
+        System.out.println("attribute 'Land_Polygons'    type: " + cityDescriptor.getType().toString());
+        System.out.println("attribute 'Land_Polygons' binding: " + cityDescriptor.getType().getBinding());
 
         // default geometry
         GeometryDescriptor geometryDescriptor = type.getGeometryDescriptor();
@@ -188,12 +188,12 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("Clans");
+        SimpleFeatureType type = store.getSchema("Land_Polygons");
 
-        FeatureSource fs = store.getFeatureSource("Clans");
+        FeatureSource fs = store.getFeatureSource("Land_Polygons");
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType count: " + fs.getCount(new Query("", Filter.INCLUDE)));
-        System.out.println("featureType bounds: " + store.getFeatureSource("Clans").getBounds());
+        System.out.println("featureType bounds: " + store.getFeatureSource("Land_Polygons").getBounds());
 
         // example2 end
         System.out.println("\ntestBounds end\n");

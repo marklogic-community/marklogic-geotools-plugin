@@ -76,7 +76,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	StructuredQueryBuilder b = queryMgr.newStructuredQueryBuilder();
     	
     	StringHandle rawHandle = 
-    		    new StringHandle("{\"search\":{\"query\":" + definingQuery + "}}").withFormat(Format.JSON);
+    		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery + "}}").withFormat(Format.JSON);
     	System.out.println("rawHandle:\n" + rawHandle.get());
     	RawCombinedQueryDefinition querydef =
     		    queryMgr.newRawCombinedQueryDefinition(rawHandle);

@@ -1,0 +1,16 @@
+host
+ml9
+port
+9080
+username
+admin
+password
+admin
+input_file_path
+/Users/tdiepenbrock/Documents/landPolygons/ne_50m_coastline/jsonFiles
+input_file_pattern
+'.*\.json'
+transform_module
+/lib/geoJSONTransformLib.sjs
+transform_function
+transform

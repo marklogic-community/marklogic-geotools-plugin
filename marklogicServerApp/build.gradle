@@ -31,3 +31,35 @@ task loadGeoToolsData(type: com.marklogic.gradle.task.MlcpTask) {
   username = "admin"
   password = "admin"
 }
+
+task loadGeoToolsCoastlinesData(type: com.marklogic.gradle.task.MlcpTask) {
+  classpath = configurations.mlcp
+  command = "IMPORT"
+  database = mlAppConfig.contentDatabaseName
+  port = mlAppConfig.restPort
+  input_file_path = "/Users/tdiepenbrock/Documents/landPolygons/ne_50m_coastline/jsonFiles"
+  input_file_type = "documents"
+  transform_module = "/lib/geoJSONTransformLib.sjs"
+  transform_function = "transform"
+  batch_size = 1
+  transaction_size = 1
+  username = "admin"
+  password = "admin"
+  output_collections = "ne_50m_coastline,geojson"
+}
+
+task loadGeoToolsLandPolygonsData(type: com.marklogic.gradle.task.MlcpTask) {
+  classpath = configurations.mlcp
+  command = "IMPORT"
+  database = mlAppConfig.contentDatabaseName
+  port = mlAppConfig.restPort
+  input_file_path = "/Users/tdiepenbrock/Documents/landPolygons/ne_50m_land/jsonFiles"
+  input_file_type = "documents"
+  transform_module = "/lib/geoJSONTransformLib.sjs"
+  transform_function = "transform"
+  batch_size = 1
+  transaction_size = 1
+  username = "admin"
+  password = "admin"
+  output_collections = "ne_50m_land,geojson"
+}

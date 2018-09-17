@@ -39,21 +39,24 @@ function wrapGeoJSON(geoJSON) {
 		catch (err) {
 			xdmp.log("Warning, bounding box calculation failed");
 		}
+		
 	}
-
-	var envelope = {
-		geoJSON:geoJSONObject,
-		metadata: {
-			ctsRegion:ctsGeometries,
-			centroids:centroids,
-			bbox:{
+	var boundingBox = {
 				"boxWest":boxWest,
 			    "boxSouth":boxSouth,
 			    "boxNorth":boxNorth,
 			    "boxEast":boxEast
-			}
+			};
+
+	var envelope = {
+		geoJSON:geoJSONObject,
+		metadata: {
 		}
 	};
+
+	if (ctsGeometries) {envelope.metadata.ctsRegions = ctsGeometries;}
+	if (centroids) {envelope.metadata.centroids = centroids;}
+	if (boundingBox) {envelope.metadata.bbox = boundingBox;}
 
 	return xdmp.unquote(xdmp.quote(envelope));
 };
