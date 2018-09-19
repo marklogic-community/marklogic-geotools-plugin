@@ -7,11 +7,18 @@ import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.geotools.feature.AttributeBuilder;
+import org.geotools.feature.AttributeTypeBuilder;
+import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.feature.type.FeatureTypeFactoryImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.AttributeType;
+import org.opengis.feature.type.GeometryType;
 import org.opengis.filter.Filter;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +32,7 @@ import com.marklogic.client.io.ValuesHandle;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
 import com.marklogic.client.query.ValuesDefinition;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
@@ -34,9 +42,11 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
-	
+	private AttributeTypeBuilder attributeBuilder;
+    
 	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query) {
 		super(entry, query);
+		attributeBuilder = new AttributeTypeBuilder(new FeatureTypeFactoryImpl());
 		retrieveDBMetadata(entry, query);
 	}
 	
@@ -52,7 +62,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	    JacksonHandle handle = new JacksonHandle();
 	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
 	    dbMetadata = handle.get();
-	    System.out.println("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
+//	    System.out.println("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
 	    definingQuery = dbMetadata.get("definingQuery");
 	}
 	
@@ -152,6 +162,25 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		return new MarkLogicFeatureReader(getState(), query, definingQuery.toString());
 	}
 
+	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
+		AttributeDescriptor descriptor = null;
+		attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
+		attributeBuilder.setBinding(binding);
+		attributeBuilder.setNamespaceURI(getDataStore().getNamespaceURI());
+		
+		if (Geometry.class.isAssignableFrom(binding)) {
+            attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
+
+            GeometryType type = attributeBuilder.buildGeometryType();
+            descriptor = attributeBuilder.buildDescriptor(new NameImpl(getDataStore().getNamespaceURI(), name), type);
+        }
+		else {
+			AttributeType type = attributeBuilder.buildType();
+			descriptor = attributeBuilder.buildDescriptor(new NameImpl(getDataStore().getNamespaceURI(), name), type);
+		}
+        return descriptor;
+	}
+	
 	@Override
 	protected SimpleFeatureType buildFeatureType() throws IOException {
 		if (dbMetadata == null) {
@@ -159,50 +188,69 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		}
 		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+//		System.out.println("Setting feature type builder name to " + entry.getName());
         builder.setName(entry.getName());
         builder.setSRS( "EPSG:4326" );
         builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
+        
+        
         JsonNode schema = dbMetadata.get("schema");
         
         for (JsonNode n : schema) {
         	String name = n.get("name").asText();
         	String type = n.get("type").asText();
+        	
+        	String attrName = null;
+        	Class<?> binding = null;
         	if (type.contentEquals("geometry")) {
         		String geoType = n.get("geometryType").asText();
         		if (geoType.contentEquals("point")) { 
-        			builder.add(name, Point.class);
+        			//builder.add(name, Point.class);
+        			binding = Point.class;
         		}
         		else if (geoType.contentEquals("linestring")) {
-        			builder.add(name, LineString.class);
+//        			builder.add(name, LineString.class);
+        			binding = LineString.class;
         		}
         		else if (geoType.contentEquals("polygon")) {
-        			builder.add(name, Polygon.class);
+//        			builder.add(name, Polygon.class);
+        			binding = Polygon.class;
         		}
         		else if (geoType.contentEquals("MultiPolygon")) {
-        			builder.add(name, MultiPolygon.class);
+//        			builder.add(name, MultiPolygon.class);
+        			binding = MultiPolygon.class;
         		}
         	}
         	else if (type.contentEquals("string")) {
-        		builder.add(name, String.class);
+//        		builder.add(name, String.class);
+        		binding = String.class;
         	}
         	else if (type.contentEquals("int")) {
-        		builder.add(name, Integer.class);
+//        		builder.add(name, Integer.class);
+        		binding = Integer.class;
         	}
         	else if (type.contentEquals("float")) {
-        		builder.add(name, Float.class);
+//        		builder.add(name, Float.class);
+        		binding = Float.class;
         	}
         	else if (type.contentEquals("double")) {
-        		builder.add(name, Double.class);
+//        		builder.add(name, Double.class);
+        		binding = Double.class;
         	}
         	else if (type.contentEquals("boolean")) {
-        		builder.add(name, Boolean.class);
+//        		builder.add(name, Boolean.class);
+        		binding = Boolean.class;
         	}
         	else if (type.contentEquals("dateTime")) {
-        		builder.add(name, Date.class);
+//        		builder.add(name, Date.class);
+        		binding = Date.class;
         	}
         	else
-        		builder.add(name, String.class);
+//        		builder.add(name, String.class);
+        		binding = String.class;
+        	AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
+        	builder.add(attrDesc);
         }
         // build the type (it is immutable and cannot be modified)
         final SimpleFeatureType SCHEMA = builder.buildFeatureType();

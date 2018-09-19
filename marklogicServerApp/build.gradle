@@ -32,6 +32,21 @@ task loadGeoToolsData(type: com.marklogic.gradle.task.MlcpTask) {
   password = "admin"
 }
 
+task loadLandPolygonsAndCoastlines(type: com.marklogic.gradle.task.MlcpTask) {
+  classpath = configurations.mlcp
+  command = "IMPORT"
+  database = mlAppConfig.contentDatabaseName
+  port = mlAppConfig.restPort
+  input_file_path = "data/landPolygonsAndCoastlines"
+  input_file_type = "archive"
+  transform_module = "/lib/geoJSONTransformLib.sjs"
+  transform_function = "transform"
+  batch_size = 1
+  transaction_size = 1
+  username = "admin"
+  password = "admin"
+}
+
 task loadGeoToolsCoastlinesData(type: com.marklogic.gradle.task.MlcpTask) {
   classpath = configurations.mlcp
   command = "IMPORT"

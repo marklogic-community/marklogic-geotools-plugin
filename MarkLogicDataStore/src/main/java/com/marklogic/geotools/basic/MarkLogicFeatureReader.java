@@ -99,6 +99,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
         } else {
             feature = readFeature();
         }
+//        System.out.println("next(): successfully read feature, about to return it");
         return feature;
 	}
 
@@ -108,6 +109,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
             return true;
         } else {
             next = readFeature(); // read next feature so we can check
+//            System.out.println("hasNext(): set next to readFeature(), returning");
             return next != null;
         }
 	}
@@ -124,7 +126,9 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		FeatureJSON fj = new FeatureJSON();
 		InputStream s = h.get();
 		
+//		System.out.println("about to read stream into feature:");
 		SimpleFeature feature = fj.readFeature(s);
+//		System.out.println("successfully read stream into feature");
 		index++;
 		return feature;
 	}

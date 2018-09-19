@@ -51,6 +51,15 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 					false,
 					null
 					);
+	public static final Param NAMESPACE_PARAM =
+			new Param(
+					"namespace",
+					String.class,
+					"MarkLogic Datastore Namespace",
+					false,
+					null
+					);
+
 
 	
 	public MarkLogicDataStoreFactory() {}
@@ -68,7 +77,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public Param[] getParametersInfo() {
-		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM};
+		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM};
 	}
 
 	@Override
@@ -84,6 +93,8 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
             if (password == null) return false;
             String database = (String) ML_DATABASE_PARAM.lookUp(params);
             
+            String namespace = (String) NAMESPACE_PARAM.lookUp(params);
+
             return true;
         } catch (Exception e) {
             // ignore as we are expected to return true or false
@@ -116,9 +127,13 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
         String username = (String) ML_USERNAME_PARAM.lookUp(params);
         String password = (String) ML_PASSWORD_PARAM.lookUp(params);
         String database = (String) ML_DATABASE_PARAM.lookUp(params);
+        String namespace = (String) NAMESPACE_PARAM.lookUp(params);
         
+        for (String k : params.keySet()) {
+            System.out.println("param key: " + k);
+         }
         SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-        MarkLogicDataStore ds = new MarkLogicDataStore(host, port, c, database);
+        MarkLogicDataStore ds = new MarkLogicDataStore(host, port, c, database, namespace);
         return ds;
 	}
 

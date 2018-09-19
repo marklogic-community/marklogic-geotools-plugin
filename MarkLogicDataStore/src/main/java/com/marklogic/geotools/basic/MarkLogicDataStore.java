@@ -30,8 +30,9 @@ public class MarkLogicDataStore extends ContentDataStore {
 	DatabaseClient client;
 	DatabaseClientFactory.SecurityContext context;
 	
-	public MarkLogicDataStore(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database) {
+	public MarkLogicDataStore(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database, String namespace) {
 		client = DatabaseClientFactory.newClient(host, port, securityContext);
+		setNamespaceURI(namespace);
 	}
 	
 	DatabaseClient getClient() {
@@ -43,6 +44,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 		
 		System.out.println("**************************************************************************");
 		System.out.println("createTypeNames called!");
+		System.out.println("Datastore namespace: " + getNamespaceURI());
 		System.out.println("**************************************************************************");
 		
 		QueryManager queryMgr = client.newQueryManager();

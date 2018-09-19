@@ -20,7 +20,7 @@ function transformGeoJSON(context, params, content)
 		}
 	}
 	else {//leave everything else alone 
-		xdmp.log("inputType is not 'json', returning original content");
+		xdmp.log("inputType is not 'json', returning original content, uri = " + xdmp.nodeUri(content));
 		return content;
 	}
 };
