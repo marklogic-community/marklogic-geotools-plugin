@@ -52,7 +52,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", "geotools");
 		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
 		TuplesHandle results = queryMgr.tuples(vdef, new TuplesHandle());
-		ArrayList<Name> nameList = new ArrayList<Name>();
+		List<Name> nameList = new ArrayList<>();
 		Tuple[] tuples = results.getTuples();
 		
 		for (Tuple t : tuples) {
