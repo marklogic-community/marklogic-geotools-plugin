@@ -86,7 +86,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     
 	@Override
 	public SimpleFeatureType getFeatureType() {
-		return (SimpleFeatureType) state.getFeatureType();
+		return state.getFeatureType();
 	}
 
 	
