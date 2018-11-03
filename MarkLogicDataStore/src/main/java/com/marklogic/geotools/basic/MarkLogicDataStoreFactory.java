@@ -133,8 +133,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
             System.out.println("param key: " + k);
          }
         SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-        MarkLogicDataStore ds = new MarkLogicDataStore(host, port, c, database, namespace);
-        return ds;
+        return new MarkLogicDataStore(host, port, c, database, namespace);
 	}
 
 	@Override
