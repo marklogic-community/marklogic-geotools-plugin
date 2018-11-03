@@ -5,7 +5,7 @@ plugins {
 
 repositories {
   jcenter()
-  maven { url "https://developer.marklogic.com/maven2/" }
+  maven { url "http://developer.marklogic.com/maven2/" }
 }
 
 configurations {
@@ -23,13 +23,11 @@ task loadGeoToolsData(type: com.marklogic.gradle.task.MlcpTask) {
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
   input_file_path = "data"
-  input_file_type = "archive"
+  input_compressed = "true"
   transform_module = "/lib/geoJSONTransformLib.sjs"
   transform_function = "transform"
   batch_size = 1
   transaction_size = 1
-  username = "admin"
-  password = "admin"
 }
 
 task loadLandPolygonsAndCoastlines(type: com.marklogic.gradle.task.MlcpTask) {
@@ -38,13 +36,11 @@ task loadLandPolygonsAndCoastlines(type: com.marklogic.gradle.task.MlcpTask) {
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
   input_file_path = "data/landPolygonsAndCoastlines"
-  input_file_type = "archive"
+  input_compressed = "true"
   transform_module = "/lib/geoJSONTransformLib.sjs"
   transform_function = "transform"
   batch_size = 1
   transaction_size = 1
-  username = "admin"
-  password = "admin"
 }
 
 task loadGeoToolsCoastlinesData(type: com.marklogic.gradle.task.MlcpTask) {
@@ -52,14 +48,12 @@ task loadGeoToolsCoastlinesData(type: com.marklogic.gradle.task.MlcpTask) {
   command = "IMPORT"
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
-  input_file_path = "/Users/tdiepenbrock/Documents/landPolygons/ne_50m_coastline/jsonFiles"
-  input_file_type = "documents"
+  input_file_path = "data/ne_50m_coastline_linestring.zip"
+  input_compressed = "true"
   transform_module = "/lib/geoJSONTransformLib.sjs"
   transform_function = "transform"
   batch_size = 1
   transaction_size = 1
-  username = "admin"
-  password = "admin"
   output_collections = "ne_50m_coastline,geojson"
 }
 
@@ -68,13 +62,11 @@ task loadGeoToolsLandPolygonsData(type: com.marklogic.gradle.task.MlcpTask) {
   command = "IMPORT"
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
-  input_file_path = "/Users/tdiepenbrock/Documents/landPolygons/ne_50m_land/jsonFiles"
-  input_file_type = "documents"
+  input_file_path = "data/ne_50m_land_polygons.zip"
+  input_compressed = "true"
   transform_module = "/lib/geoJSONTransformLib.sjs"
   transform_function = "transform"
   batch_size = 1
   transaction_size = 1
-  username = "admin"
-  password = "admin"
   output_collections = "ne_50m_land,geojson"
 }
