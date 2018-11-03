@@ -1,6 +1,8 @@
 /bin
 .classpath
 .project
-/build
+build
 .gradle
 .settings
+.idea
+gradle-local.properties
