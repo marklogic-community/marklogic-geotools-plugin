@@ -73,7 +73,7 @@ public class MarkLogicTest {
         // create client
         Properties p = loadProperties();
         String hostname = (String) p.get("hostname");
-        int port = (int) Integer.parseInt((String) p.get("port"));
+        int port = Integer.parseInt((String) p.get("port"));
         String database = (String) p.get("database");
         String username = (String) p.get("username");
         String password = (String) p.get("password");
@@ -210,9 +210,9 @@ public class MarkLogicTest {
         Query query = new Query("http://marklogic.com:Clans");
 
         System.out.println("open feature reader");
-        FeatureReader<SimpleFeatureType, SimpleFeature> reader =
-                datastore.getFeatureReader(query, Transaction.AUTO_COMMIT);
-        try {
+
+        try (FeatureReader<SimpleFeatureType, SimpleFeature> reader =
+                 datastore.getFeatureReader(query, Transaction.AUTO_COMMIT)) {
             int count = 0;
             while (reader.hasNext()) {
                 SimpleFeature feature = reader.next();
@@ -224,10 +224,8 @@ public class MarkLogicTest {
         } 
         catch(Exception ex) {
         	ex.printStackTrace();
-        	}
-        finally {
-            reader.close();
         }
+
         // example3 end
         System.out.println("\nexample3 elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
