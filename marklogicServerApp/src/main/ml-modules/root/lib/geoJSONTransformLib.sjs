@@ -25,16 +25,16 @@ function wrapGeoJSON(geoJSON) {
 		centroids.push(geo.approxCenter(g));
 
 		try {
-		let box = geo.boundingBoxes(g, "box-percent=0");
-		let w = xs.float(cts.boxWest(box));
-		let s = xs.float(cts.boxSouth(box));
-		let n = xs.float(cts.boxNorth(box));
-		let e = xs.float(cts.boxEast(box));
+            let box = geo.boundingBoxes(g, "box-percent=0");
+            let w = xs.float(cts.boxWest(box));
+            let s = xs.float(cts.boxSouth(box));
+            let n = xs.float(cts.boxNorth(box));
+            let e = xs.float(cts.boxEast(box));
 
-		if (boxWest == null || w < boxWest) boxWest = w;
-		if (boxSouth == null || s < boxSouth) boxSouth = s;
-		if (boxNorth == null || n > boxNorth) boxNorth = n;
-		if (boxEast == null || e > boxEast) boxEast = e;
+            if (boxWest == null || w < boxWest) boxWest = w;
+            if (boxSouth == null || s < boxSouth) boxSouth = s;
+            if (boxNorth == null || n > boxNorth) boxNorth = n;
+            if (boxEast == null || e > boxEast) boxEast = e;
 		}
 		catch (err) {
 			xdmp.log("Warning, bounding box calculation failed");
@@ -50,8 +50,7 @@ function wrapGeoJSON(geoJSON) {
 
 	var envelope = {
 		geoJSON:geoJSONObject,
-		metadata: {
-		}
+		metadata: {}
 	};
 
 	if (ctsGeometries) {envelope.metadata.ctsRegions = ctsGeometries;}
