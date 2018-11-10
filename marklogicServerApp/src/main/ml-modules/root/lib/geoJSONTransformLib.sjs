@@ -1,13 +1,13 @@
 'use strict';
 const geo = require('/MarkLogic/geospatial/geospatial');
 
-
 function wrapGeoJSON(geoJSON) {
 	var geoJSONObject;
-	if (xdmp.nodeKind(geoJSON) == 'document')
+	if (xdmp.nodeKind(geoJSON) == 'document') {
 		geoJSONObject = geoJSON.toObject();
-	else
+	} else {
 		geoJSONObject = geoJSON;
+    }
 
 	if (!(geoJSONObject.hasOwnProperty("properties") && geoJSONObject.hasOwnProperty("geometry"))) {
 		//it's not really geoJSON, so just return the original input
@@ -39,8 +39,8 @@ function wrapGeoJSON(geoJSON) {
 		catch (err) {
 			xdmp.log("Warning, bounding box calculation failed");
 		}
-		
 	}
+
 	var boundingBox = {
 				"boxWest":boxWest,
 			    "boxSouth":boxSouth,

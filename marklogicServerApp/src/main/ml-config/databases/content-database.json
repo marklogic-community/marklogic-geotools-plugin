@@ -118,7 +118,7 @@
   ],
   "geospatial-region-path-index": [
     {
-      "path-expression": "/metadata/ctsRegion",
+      "path-expression": "/metadata/ctsRegions",
       "coordinate-system": "wgs84",
       "units": "miles",
       "geohash-precision": 4,
