@@ -8,68 +8,50 @@
  */
 package com.marklogic.geotools.basic;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.DigestAuthContext;
-import com.marklogic.client.DatabaseClientFactory.SecurityContext;
 import com.marklogic.client.io.SearchHandle;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.StructuredQueryDefinition;
-import com.vividsolutions.jts.geom.Geometry;
-import java.io.File;
-import java.io.FileReader;
+
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+
 import java.util.Properties;
-import java.util.Set;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
-import org.geotools.data.DataUtilities;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.filter.text.cql2.CQL;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.Filter;
-import org.opengis.filter.FilterFactory;
 import org.opengis.filter.FilterFactory2;
-import org.opengis.filter.expression.Literal;
-import org.opengis.filter.expression.PropertyName;
-import org.opengis.filter.identity.FeatureId;
 import org.opengis.filter.spatial.Intersects;
 
 public class MarkLogicTest {
 
 	protected DatabaseClient client;
-	protected FilterFactory2 ff;
+	protected FilterFactory2 filterFactory;
 	protected FilterToMarkLogic filterToMarklogic;
 
-	public MarkLogicTest() throws Exception {
+	public MarkLogicTest() throws IOException {
         // create client
         Properties p = loadProperties();
         String hostname = (String) p.get("hostname");
@@ -80,11 +62,11 @@ public class MarkLogicTest {
         DigestAuthContext auth = new DatabaseClientFactory.DigestAuthContext(username, password);
         client = DatabaseClientFactory.newClient(hostname, port, database, auth);
 
-        ff = CommonFactoryFinder.getFilterFactory2();
+        filterFactory = CommonFactoryFinder.getFilterFactory2();
         filterToMarklogic = new FilterToMarkLogic(client);
 	}
 
-	public Properties loadProperties() throws Exception {
+	public Properties loadProperties() throws IOException {
 		InputStream propFile = MarkLogicTest.class.getResourceAsStream("marklogic.properties");
         Properties p = new Properties();
         p.load(propFile);
@@ -112,22 +94,28 @@ public class MarkLogicTest {
     }
 
     @Test
-    public void testFeatureJSON() throws Exception {
-    String s = new String ("{\"type\":\"Feature\", \"properties\":{\"SORT_NAME\":null, \"DSG\":\"PPL\", \"RC\":3, \"GENERIC\":null, \"ELEV\":null, \"LONG_\":43.461561, \"NT\":\"NS\", \"UTM\":null, \"UGI\":null, \"MF\":\"M\", \"UNI\":null, \"GMF\":null, \"FEATURE_ID\":10007550, \"FL\":null, \"OBJECTID\":17070, \"USID3\":\"X\", \"USID1\":\"YM50YAR50AX1443A4-83S\", \"USID2\":\"CIB 01 Imagery\", \"FULL_NAME\":\"الجنبعية\", \"COMMENTS\":null, \"FC\":null, \"POP\":null, \"SHORT_FORM\":null, \"LAT\":14.628441, \"LC\":\"ara\", \"ADM1\":8, \"JOG\":null, \"CC2\":null, \"CC1\":\"YM\", \"ADM2\":null, \"GCC\":null, \"UFI\":222390, \"PC\":5}, \"geometry\":{\"type\":\"Point\", \"coordinates\":[14.6284410000001, 43.4615610000001]}}");
-    FeatureJSON j = new FeatureJSON();
-    SimpleFeature sf = j.readFeature(s);
-    System.out.println(sf);
+    public void testFeatureJSON() throws IOException {
+      String s = "{\"type\":\"Feature\", \"properties\":{\"SORT_NAME\":null, \"DSG\":\"PPL\", \"RC\":3, \"GENERIC\":null, \"ELEV\":null, \"LONG_\":43.461561, \"NT\":\"NS\", \"UTM\":null, \"UGI\":null, \"MF\":\"M\", \"UNI\":null, \"GMF\":null, \"FEATURE_ID\":10007550, \"FL\":null, \"OBJECTID\":17070, \"USID3\":\"X\", \"USID1\":\"YM50YAR50AX1443A4-83S\", \"USID2\":\"CIB 01 Imagery\", \"FULL_NAME\":\"الجنبعية\", \"COMMENTS\":null, \"FC\":null, \"POP\":null, \"SHORT_FORM\":null, \"LAT\":14.628441, \"LC\":\"ara\", \"ADM1\":8, \"JOG\":null, \"CC2\":null, \"CC1\":\"YM\", \"ADM2\":null, \"GCC\":null, \"UFI\":222390, \"PC\":5}, \"geometry\":{\"type\":\"Point\", \"coordinates\":[14.6284410000001, 43.4615610000001]}}";
+      FeatureJSON j = new FeatureJSON();
+      SimpleFeature sf = j.readFeature(s);
+      System.out.println(sf);
+      assertEquals("feature", sf.getFeatureType().getTypeName());
+      assertEquals("PPL", sf.getProperty("DSG").getValue());
+      assertTrue(sf.getAttribute("geometry") instanceof Point);
+      assertEquals( 14.6284410000001, ((Point)sf.getAttribute("geometry")).getX(), 0.0001);
     }
     
     @Test
-    public void testDataStoreFactory() throws Exception {
+    public void testDataStoreFactory() throws IOException {
         System.out.println("testDataStoreFactory start\n");
         Properties p = loadProperties();
         
         DataStore store = DataStoreFinder.getDataStore(p);
         
         System.out.println(store);
-        String names[] = store.getTypeNames();
+        String[] names = store.getTypeNames();
+        assertNotEquals("At least one type is retrieved", 0, names.length);
+
         System.out.println("typenames: " + names.length);
         System.out.println("typename[0]: " + names[0]);
         // example1 end
@@ -135,7 +123,7 @@ public class MarkLogicTest {
     }
 
     @Test
-    public void testSchema() throws Exception {
+    public void testSchema() throws IOException {
         System.out.println("testSchema start\n");
         Properties p = loadProperties();
 
@@ -182,7 +170,7 @@ public class MarkLogicTest {
     }
     
     @Test
-    public void testBounds() throws Exception {
+    public void testBounds() throws IOException {
         System.out.println("testBounds start\n");
         Properties p = loadProperties();
 
@@ -200,7 +188,7 @@ public class MarkLogicTest {
     }
     
     //@Test
-    public void example3() throws Exception {
+    public void example3() throws IOException {
         System.out.println("example3 start\n");
         long startTime = System.currentTimeMillis();
         Properties p = loadProperties();
@@ -213,17 +201,14 @@ public class MarkLogicTest {
 
         try (FeatureReader<SimpleFeatureType, SimpleFeature> reader =
                  datastore.getFeatureReader(query, Transaction.AUTO_COMMIT)) {
-            int count = 0;
-            while (reader.hasNext()) {
-                SimpleFeature feature = reader.next();
-                System.out.println("  " + feature.getID() + " " + feature.getAttribute("ADM1"));
-                count++;
-            }
-            System.out.println("close feature reader");
-            System.out.println("read in " + count + " features");
-        } 
-        catch(Exception ex) {
-        	ex.printStackTrace();
+          int count = 0;
+          while (reader.hasNext()) {
+            SimpleFeature feature = reader.next();
+            System.out.println("  " + feature.getID() + " " + feature.getAttribute("ADM1"));
+            count++;
+          }
+          System.out.println("close feature reader");
+          System.out.println("read in " + count + " features");
         }
 
         // example3 end
@@ -231,7 +216,7 @@ public class MarkLogicTest {
     }
 
 	@Test
-	public void testIntersects() throws Exception {
+	public void testIntersects() {
 		System.out.println("testIntersects start\n");
 		long startTime = System.currentTimeMillis();
 
@@ -239,14 +224,16 @@ public class MarkLogicTest {
 				// I'm using lat/long... is that correct?
 				new Coordinate(14.0, 43.0), new Coordinate(15.0, 43.0), new Coordinate(14.0, 44.0),
 				new Coordinate(15.0, 44.0), new Coordinate(14.0, 43.0), };
-		Intersects intersects = ff.intersects(ff.property("geom"), // this string doesn't actually matter
-				ff.literal(new GeometryFactory().createPolygon(coordinates)));
+		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"), // this string doesn't actually matter
+				filterFactory.literal(new GeometryFactory().createPolygon(coordinates)));
 		StructuredQueryDefinition query = (StructuredQueryDefinition) intersects.accept(filterToMarklogic, null);
 
 		QueryManager qm = client.newQueryManager();
 		SearchHandle results = new SearchHandle();
 		qm.search(query, results);
-		System.out.println(results.getTotalResults());
+		long totalResults = results.getTotalResults();
+    System.out.println(totalResults);
+		assertTrue(totalResults > 0);
 		// testIntersects end
 		System.out.println("\ntestIntersects elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
