@@ -5,14 +5,19 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.SecurityContext;
+import org.geotools.util.logging.Logging;
 
 public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
+
+	private static final Logger LOGGER = Logging.getLogger(MarkLogicFeatureReader.class);
 
 	Boolean isAvailable = null;
 	public static final Param ML_HOST_PARAM = 
@@ -60,14 +65,9 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 					null
 					);
 
-
-	
-	public MarkLogicDataStoreFactory() {}
-	
 	@Override
 	public String getDisplayName() {
 		return "MarkLogic (Basic)";
-
 	}
 
 	@Override
@@ -83,36 +83,36 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	@Override
 	public boolean canProcess(Map<String, Serializable> params) {
 		try {
-            String host = (String) ML_HOST_PARAM.lookUp(params);
-            if (host == null) return false;
-            Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
-            if (port == null) return false;
-            String username = (String) ML_USERNAME_PARAM.lookUp(params);
-            if (username == null) return false;
-            String password = (String) ML_PASSWORD_PARAM.lookUp(params);
-            if (password == null) return false;
-            String database = (String) ML_DATABASE_PARAM.lookUp(params);
-            
-            String namespace = (String) NAMESPACE_PARAM.lookUp(params);
+			String host = (String) ML_HOST_PARAM.lookUp(params);
+			if (host == null) return false;
+			Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
+			if (port == null) return false;
+			String username = (String) ML_USERNAME_PARAM.lookUp(params);
+			if (username == null) return false;
+			String password = (String) ML_PASSWORD_PARAM.lookUp(params);
+			if (password == null) return false;
 
-            return true;
-        } catch (Exception e) {
-            // ignore as we are expected to return true or false
-        }
-        return false;
+			String database = (String) ML_DATABASE_PARAM.lookUp(params);
+			String namespace = (String) NAMESPACE_PARAM.lookUp(params);
+
+			return true;
+		} catch (Exception e) {
+				// ignore as we are expected to return true or false
+		}
+		return false;
 	}
 
 	@Override
 	public synchronized boolean isAvailable() {
 		if (isAvailable == null) {
-            try {
-                Class markLogicReaderType = Class.forName("com.marklogic.geotools.basic.MarkLogicFeatureReader");
-                isAvailable = true;
-            } catch (ClassNotFoundException e) {
-                isAvailable = false;
-            }
-        }
-        return isAvailable;
+			try {
+					Class markLogicReaderType = Class.forName("com.marklogic.geotools.basic.MarkLogicFeatureReader");
+					isAvailable = true;
+			} catch (ClassNotFoundException e) {
+					isAvailable = false;
+			}
+		}
+		return isAvailable;
 	}
 
 	@Override
@@ -123,17 +123,17 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	@Override
 	public DataStore createDataStore(Map<String, Serializable> params) throws IOException {
 		String host = (String) ML_HOST_PARAM.lookUp(params);
-        Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
-        String username = (String) ML_USERNAME_PARAM.lookUp(params);
-        String password = (String) ML_PASSWORD_PARAM.lookUp(params);
-        String database = (String) ML_DATABASE_PARAM.lookUp(params);
-        String namespace = (String) NAMESPACE_PARAM.lookUp(params);
-        
-        for (String k : params.keySet()) {
-            System.out.println("param key: " + k);
-         }
-        SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-        return new MarkLogicDataStore(host, port, c, database, namespace);
+		Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
+		String username = (String) ML_USERNAME_PARAM.lookUp(params);
+		String password = (String) ML_PASSWORD_PARAM.lookUp(params);
+		String database = (String) ML_DATABASE_PARAM.lookUp(params);
+		String namespace = (String) NAMESPACE_PARAM.lookUp(params);
+
+		for (String k : params.keySet()) {
+			LOGGER.log(Level.INFO, () -> "param key: {}" + k);
+		}
+		SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
+		return new MarkLogicDataStore(host, port, c, database, namespace);
 	}
 
 	@Override

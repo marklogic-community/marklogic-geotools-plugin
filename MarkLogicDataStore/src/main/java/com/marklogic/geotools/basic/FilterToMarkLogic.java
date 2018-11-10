@@ -1,9 +1,10 @@
 package com.marklogic.geotools.basic;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import org.apache.commons.collections4.IteratorUtils;
 import org.geotools.factory.CommonFactoryFinder;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
+import org.geotools.util.logging.Logging;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.BinaryLogicOperator;
@@ -68,8 +69,11 @@ import com.marklogic.client.query.StructuredQueryBuilder.GeospatialOperator;
 import com.marklogic.client.query.StructuredQueryBuilder.Point;
 import com.marklogic.client.query.StructuredQueryDefinition;
 
+import java.util.logging.Logger;
+
 public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
+	private static final Logger LOGGER = Logging.getLogger(FilterToMarkLogic.class);
 //	private StructuredQueryBuilder qb;
 //	
 //	public FilterToMarkLogic() {
@@ -83,10 +87,8 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 //	public FilterToMarkLogic(String options) {
 //		qb = new StructuredQueryBuilder(options);
 //	}
-	
 
-
-	protected FilterFactory2 ff;
+	protected FilterFactory2 filterFactory;
 
     /** The schema the encoder will use */
 	protected SimpleFeatureType featureType;
@@ -95,15 +97,17 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 	//protected DatabaseClient client;
 	//protected QueryManager qm;
 	protected StructuredQueryBuilder qb;
+	protected StructuredQueryBuilder.CoordinateSystem queryBuilderCoordinateSystem = StructuredQueryBuilder.CoordinateSystem.WGS84;
+
 
 	public FilterToMarkLogic(DatabaseClient client) {
 		//this.client = client;
 		QueryManager qm = client.newQueryManager();
 		qb = qm.newStructuredQueryBuilder();
 		qb.geoRegionPath( // TODO: should this be in the constructor or some other setter, or nowhere?
-			qb.pathIndex("/metadata/ctsRegion"),
-			StructuredQueryBuilder.CoordinateSystem.WGS84);
-		ff = CommonFactoryFinder.getFilterFactory2();
+			qb.pathIndex("/metadata/ctsRegions"),
+				queryBuilderCoordinateSystem);
+		filterFactory = CommonFactoryFinder.getFilterFactory2();
 	}
 
     /**
@@ -200,12 +204,13 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
         StructuredQueryDefinition[] queries = (StructuredQueryDefinition[]) IteratorUtils.toArray(filters);
         
         // TODO: can i use an enum here to be safer?
-        if ("AND".equals(type))
-        	return qb.and(queries);
-        else if ("OR".equals(type))
-        	return qb.or(queries);
-        else
-        	throw new RuntimeException(); // TODO: what kind of excetion?
+        if ("AND".equals(type)) {
+					return qb.and(queries);
+				} else if ("OR".equals(type)) {
+					return qb.or(queries);
+				} else {
+					throw new IllegalArgumentException(); // TODO: what kind of exception?
+				}
     }
 
     @Override
@@ -231,9 +236,9 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 		Expression prop = filter.getExpression();
 		Expression lowerBound = filter.getLowerBoundary();
 		Expression upperBound = filter.getUpperBoundary();
-		PropertyIsGreaterThanOrEqualTo gte = ff.greaterOrEqual(prop, lowerBound);
-		PropertyIsLessThanOrEqualTo lte = ff.lessOrEqual(prop, upperBound);
-		And and = ff.and(gte, lte);
+		PropertyIsGreaterThanOrEqualTo gte = filterFactory.greaterOrEqual(prop, lowerBound);
+		PropertyIsLessThanOrEqualTo lte = filterFactory.lessOrEqual(prop, upperBound);
+		And and = filterFactory.and(gte, lte);
 		return and.accept(this, extraData);
 	}
 
@@ -335,22 +340,21 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	@Override
 	public Object visit(Intersects filter, Object extraData) {
-		// create the Intersects filter with a PropertyName that doesn't matter and a
-		// geometry
+		// create the Intersects filter with a PropertyName that doesn't matter and a geometry
 		// TODO: should this be pulled out similar to FilterToSql?
-		Expression e1 = filter.getExpression1();
-		Expression e2 = filter.getExpression2();
+		Expression propertyNameExpression = filter.getExpression1();
+		Expression literalExpression = filter.getExpression2();
 
 		// swap operands if necessary
-		if (e1 instanceof Literal && e2 instanceof PropertyName) {
-			e1 = (PropertyName) filter.getExpression2();
-			e2 = (Literal) filter.getExpression1();
+		if (propertyNameExpression instanceof Literal && literalExpression instanceof PropertyName) {
+			propertyNameExpression = filter.getExpression2();
+			literalExpression = filter.getExpression1();
 		}
 
 		// we don't actually care what the property name is in this case - all we want
 		// is the geometry
 		// TODO: we probably want to pull this logic into its own class
-		Geometry geom = e2.evaluate(null, Geometry.class);
+		Geometry geom = literalExpression.evaluate(null, Geometry.class);
 		Coordinate[] coords = geom.getCoordinates();
 		int pointCount = geom.getNumPoints();
 		Point[] points = new Point[pointCount];
@@ -360,7 +364,7 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 		}
 
 		StructuredQueryDefinition query = qb.geospatial(
-				qb.geoRegionPath(qb.pathIndex("/metadata/ctsRegion"), StructuredQueryBuilder.CoordinateSystem.WGS84),
+				qb.geoRegionPath(qb.pathIndex("/metadata/ctsRegions"), queryBuilderCoordinateSystem),
 				GeospatialOperator.INTERSECTS,
 				qb.polygon(points));
 		return query;

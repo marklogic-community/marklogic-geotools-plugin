@@ -2,23 +2,36 @@ package com.marklogic.geotools.basic;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
-import org.geotools.feature.AttributeBuilder;
 import org.geotools.feature.AttributeTypeBuilder;
 import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.feature.type.FeatureTypeFactoryImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+//import org.locationtech.jts.geom.Geometry;
+//import org.locationtech.jts.geom.LineString;
+//import org.locationtech.jts.geom.MultiPolygon;
+//import org.locationtech.jts.geom.Point;
+//import org.locationtech.jts.geom.Polygon;
+import org.geotools.util.logging.Logging;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.AttributeType;
 import org.opengis.feature.type.GeometryType;
+import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,14 +45,9 @@ import com.marklogic.client.io.ValuesHandle;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
 import com.marklogic.client.query.ValuesDefinition;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
-
+	private static final Logger LOGGER = Logging.getLogger(MarkLogicBasicFeatureSource.class);
 	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
 	private AttributeTypeBuilder attributeBuilder;
@@ -62,10 +70,11 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	    JacksonHandle handle = new JacksonHandle();
 	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
 	    dbMetadata = handle.get();
-//	    System.out.println("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
+//	    LOGGER.info("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
 	    definingQuery = dbMetadata.get("definingQuery");
 	}
-	
+
+	@Override
 	public MarkLogicDataStore getDataStore() {
 		return (MarkLogicDataStore) super.getDataStore();
 	}
@@ -73,112 +82,109 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	//make this a UDF later, for now just return values we've poked into each doc
 	@Override
 	protected ReferencedEnvelope getBoundsInternal(Query query) throws IOException {
-		System.out.println("*******************************************************************");
-		System.out.println("in MarkLogicBasicFeatureSource:getBoundsInternal");
-		
-        DatabaseClient client = getDataStore().getClient();
-        try {
-        	QueryManager qm = client.newQueryManager();
-        	
-        	StringHandle rawHandle = 
-        		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
-        	System.out.println("rawHandle:\n" + rawHandle.get());
-        	RawCombinedQueryDefinition querydef =
-        		    qm.newRawCombinedQueryDefinition(rawHandle);
+		LOGGER.log(Level.INFO, () -> "*******************************************************************");
+		LOGGER.log(Level.INFO, () -> "in MarkLogicBasicFeatureSource:getBoundsInternal");
 
-        	ValuesDefinition vdef = qm.newValuesDefinition("box-west", "geotools");
-        	vdef.setQueryDefinition(querydef);
-        	vdef.setAggregate("min");
-        	
-        	ValuesHandle westH = qm.values(vdef, new ValuesHandle());
-        	float west = westH.getAggregate("min").get("xs:float", Float.class);
-        	
-        	vdef = qm.newValuesDefinition("box-east", "geotools");
-        	vdef.setQueryDefinition(querydef);
-        	vdef.setAggregate("max");
-        	ValuesHandle eastH = qm.values(vdef, new ValuesHandle());
-        	float east = eastH.getAggregate("max").get("xs:float", Float.class);
-        	
-        	vdef = qm.newValuesDefinition("box-south", "geotools");
-        	vdef.setQueryDefinition(querydef);
-        	vdef.setAggregate("min");
-        	ValuesHandle southH = qm.values(vdef, new ValuesHandle());
-        	float south = southH.getAggregate("min").get("xs:float", Float.class);
-        	
-        	vdef = qm.newValuesDefinition("box-north", "geotools");
-        	vdef.setQueryDefinition(querydef);
-        	vdef.setAggregate("max");
-        	ValuesHandle northH = qm.values(vdef, new ValuesHandle());
-        	float north = northH.getAggregate("max").get("xs:float", Float.class);
-        	
-        	System.out.println("west: " + west);
-        	System.out.println("east: " + east);
-        	System.out.println("north: " + north);
-        	System.out.println("south: " + south);
-        	System.out.println("*******************************************************************");
-    		
-        	return new ReferencedEnvelope(west, east, south, north, DefaultGeographicCRS.WGS84);
-        } 
-        catch (Exception ex) {
-        	ex.printStackTrace();
-        	return null;
-        }
+		DatabaseClient client = getDataStore().getClient();
+		try {
+			QueryManager qm = client.newQueryManager();
+
+			StringHandle rawHandle =
+						new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
+			LOGGER.log(Level.INFO, () -> "rawHandle:\n" + rawHandle.get());
+			RawCombinedQueryDefinition querydef =
+						qm.newRawCombinedQueryDefinition(rawHandle);
+
+			ValuesDefinition vdef = qm.newValuesDefinition("box-west", "geotools");
+			vdef.setQueryDefinition(querydef);
+			vdef.setAggregate("min");
+
+			ValuesHandle westH = qm.values(vdef, new ValuesHandle());
+			float west = westH.getAggregate("min").get("xs:float", Float.class);
+
+			vdef = qm.newValuesDefinition("box-east", "geotools");
+			vdef.setQueryDefinition(querydef);
+			vdef.setAggregate("max");
+			ValuesHandle eastH = qm.values(vdef, new ValuesHandle());
+			float east = eastH.getAggregate("max").get("xs:float", Float.class);
+
+			vdef = qm.newValuesDefinition("box-south", "geotools");
+			vdef.setQueryDefinition(querydef);
+			vdef.setAggregate("min");
+			ValuesHandle southH = qm.values(vdef, new ValuesHandle());
+			float south = southH.getAggregate("min").get("xs:float", Float.class);
+
+			vdef = qm.newValuesDefinition("box-north", "geotools");
+			vdef.setQueryDefinition(querydef);
+			vdef.setAggregate("max");
+			ValuesHandle northH = qm.values(vdef, new ValuesHandle());
+			float north = northH.getAggregate("max").get("xs:float", Float.class);
+
+			LOGGER.log(Level.INFO, () -> "west: " + west);
+			LOGGER.log(Level.INFO, () -> "east: " + east);
+			LOGGER.log(Level.INFO, () -> "north: " + north);
+			LOGGER.log(Level.INFO, () -> "south: " + south);
+			LOGGER.log(Level.INFO, () -> "*******************************************************************");
+
+			return new ReferencedEnvelope(west, east, south, north, DefaultGeographicCRS.WGS84);
+		}
+		catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, "unable to parse bounds", ex);
+			return null;
+		}
 	}
 
 	@Override
 	protected int getCountInternal(Query query) throws IOException {
 		if (query.getFilter() == Filter.INCLUDE) {
-            DatabaseClient client = getDataStore().getClient();
-            try {
-            	QueryManager qm = client.newQueryManager();
-            	String JSON_OPTIONS = "\"options\": {\"return-results\": false}";      	
-            	StringHandle rawHandle = 
-            		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "," + JSON_OPTIONS + "}}").withFormat(Format.JSON);
-            	System.out.println("rawHandle:\n" + rawHandle.get());
-            	RawCombinedQueryDefinition queryDef =
-            		    qm.newRawCombinedQueryDefinition(rawHandle);
-            	
-            	System.out.println("getCountInternal(): running query\n" + rawHandle.get());
-            	SearchHandle resultsHandle = new SearchHandle();
-                // run the search
-                qm.search(queryDef, resultsHandle);
-                System.out.println(resultsHandle.getQueryCriteria().toString());
-                int count = (int) resultsHandle.getTotalResults();
-                System.out.println("getCountInternal(): query returned " + count + " results");
-                return count;
-            } 
-            catch (Exception ex) {
-            	ex.printStackTrace();
-            	return -1;
-            }
-        }
-		System.out.println("Query is " + query.toString() + "; feature by feature count required for MarkLogic driver");
-        return -1; // feature by feature scan required to count records
+			DatabaseClient client = getDataStore().getClient();
+			try {
+				QueryManager qm = client.newQueryManager();
+				String JSON_OPTIONS = "\"options\": {\"return-results\": false}";
+				StringHandle rawHandle =
+							new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "," + JSON_OPTIONS + "}}").withFormat(Format.JSON);
+				LOGGER.info("rawHandle:\n" + rawHandle.get());
+				RawCombinedQueryDefinition queryDef =
+							qm.newRawCombinedQueryDefinition(rawHandle);
+
+				LOGGER.info("getCountInternal(): running query\n" + rawHandle.get());
+				SearchHandle resultsHandle = new SearchHandle();
+				// run the search
+				qm.search(queryDef, resultsHandle);
+				LOGGER.info(resultsHandle.getQueryCriteria().toString());
+				int count = (int) resultsHandle.getTotalResults();
+				LOGGER.log(Level.INFO, () -> "getCountInternal(): query returned " + count + " results");
+				return count;
+			}
+			catch (Exception ex) {
+				LOGGER.log(Level.SEVERE,"unable to execute query", ex);
+				return -1;
+			}
+	  }
+		LOGGER.log(Level.INFO, () -> "Query is " + query.toString() + "; feature by feature count required for MarkLogic driver");
+    return -1; // feature by feature scan required to count records
 	}
 
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
-		// TODO Auto-generated method stub
 		return new MarkLogicFeatureReader(getState(), query, definingQuery.toString());
 	}
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
-		AttributeDescriptor descriptor = null;
+		AttributeDescriptor descriptor;
 		attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
 		attributeBuilder.setBinding(binding);
 		attributeBuilder.setNamespaceURI(getDataStore().getNamespaceURI());
-		
+		Name nameImpl = new NameImpl(getDataStore().getNamespaceURI(), name);
 		if (Geometry.class.isAssignableFrom(binding)) {
-            attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
-
-            GeometryType type = attributeBuilder.buildGeometryType();
-            descriptor = attributeBuilder.buildDescriptor(new NameImpl(getDataStore().getNamespaceURI(), name), type);
-        }
+			GeometryType type = attributeBuilder.buildGeometryType();
+			descriptor = attributeBuilder.buildDescriptor(nameImpl, type);
+		}
 		else {
 			AttributeType type = attributeBuilder.buildType();
-			descriptor = attributeBuilder.buildDescriptor(new NameImpl(getDataStore().getNamespaceURI(), name), type);
+			descriptor = attributeBuilder.buildDescriptor(nameImpl, type);
 		}
-        return descriptor;
+		return descriptor;
 	}
 	
 	@Override
@@ -188,73 +194,62 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		}
 		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-//		System.out.println("Setting feature type builder name to " + entry.getName());
-        builder.setName(entry.getName());
-        builder.setSRS( "EPSG:4326" );
-        builder.setNamespaceURI(getDataStore().getNamespaceURI());
+//		LOGGER.info("Setting feature type builder name to " + entry.getName());
+		builder.setName(entry.getName());
+		builder.setSRS( "EPSG:4326" );
+		builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
-        
-        
-        JsonNode schema = dbMetadata.get("schema");
-        
-        for (JsonNode n : schema) {
-        	String name = n.get("name").asText();
-        	String type = n.get("type").asText();
-        	
-        	String attrName = null;
-        	Class<?> binding = null;
-        	if (type.contentEquals("geometry")) {
-        		String geoType = n.get("geometryType").asText();
-        		if (geoType.contentEquals("point")) { 
-        			//builder.add(name, Point.class);
-        			binding = Point.class;
-        		}
-        		else if (geoType.contentEquals("linestring")) {
-//        			builder.add(name, LineString.class);
-        			binding = LineString.class;
-        		}
-        		else if (geoType.contentEquals("polygon")) {
-//        			builder.add(name, Polygon.class);
-        			binding = Polygon.class;
-        		}
-        		else if (geoType.contentEquals("MultiPolygon")) {
-//        			builder.add(name, MultiPolygon.class);
-        			binding = MultiPolygon.class;
-        		}
-        	}
-        	else if (type.contentEquals("string")) {
-//        		builder.add(name, String.class);
-        		binding = String.class;
-        	}
-        	else if (type.contentEquals("int")) {
-//        		builder.add(name, Integer.class);
-        		binding = Integer.class;
-        	}
-        	else if (type.contentEquals("float")) {
-//        		builder.add(name, Float.class);
-        		binding = Float.class;
-        	}
-        	else if (type.contentEquals("double")) {
-//        		builder.add(name, Double.class);
-        		binding = Double.class;
-        	}
-        	else if (type.contentEquals("boolean")) {
-//        		builder.add(name, Boolean.class);
-        		binding = Boolean.class;
-        	}
-        	else if (type.contentEquals("dateTime")) {
-//        		builder.add(name, Date.class);
-        		binding = Date.class;
-        	}
-        	else
-//        		builder.add(name, String.class);
-        		binding = String.class;
-        	AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
-        	builder.add(attrDesc);
-        }
-        // build the type (it is immutable and cannot be modified)
-        final SimpleFeatureType SCHEMA = builder.buildFeatureType();
-        return SCHEMA;
+		JsonNode schema = dbMetadata.get("schema");
+
+		for (JsonNode node : schema) {
+			String name = node.get("name").asText();
+			Class<?> binding = toClass(node);
+
+			AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
+			builder.add(attrDesc);
+		}
+		// build the type (it is immutable and cannot be modified)
+		return builder.buildFeatureType();
+	}
+
+	protected Class toClass(JsonNode node) {
+		Class binding = String.class;
+		String type = node.get("type").asText();
+
+		if ("geometry".contentEquals(type)) {
+			String geoType = node.get("geometryType").asText();
+			if ("point".contentEquals(geoType)) {
+				binding = Point.class;
+			}
+			else if ("linestring".contentEquals(geoType)) {
+				binding = LineString.class;
+			}
+			else if ("polygon".contentEquals(geoType)) {
+				binding = Polygon.class;
+			}
+			else if ("MultiPolygon".contentEquals(geoType)) {
+				binding = MultiPolygon.class;
+			}
+		}
+		else if ("string".contentEquals(type)) {
+			binding = String.class;
+		}
+		else if ("int".contentEquals(type)) {
+			binding = Integer.class;
+		}
+		else if ("float".contentEquals(type)) {
+			binding = Float.class;
+		}
+		else if ("double".contentEquals(type)) {
+			binding = Double.class;
+		}
+		else if ("boolean".contentEquals(type)) {
+			binding = Boolean.class;
+		}
+		else if ("dateTime".contentEquals(type)) {
+			binding = Date.class;
+		}
+		return binding;
 	}
 
 }

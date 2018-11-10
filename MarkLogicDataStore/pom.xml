@@ -21,7 +21,7 @@
 	  <groupId>org.geotools</groupId>
 	  <artifactId>gt-geojson</artifactId>
 	  <version>${geotools.version}</version>
-	</dependency>
+    </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-api</artifactId>
@@ -43,20 +43,29 @@
       <version>${geotools.version}</version>
     </dependency>
     <dependency>
-	  <groupId>com.marklogic</groupId>
-	  <artifactId>marklogic-client-api</artifactId>
-	  <version>4.0.4</version>
-	</dependency>
-	<dependency>
-		<groupId>org.apache.commons</groupId>
-		<artifactId>commons-collections4</artifactId>
-		<version>4.2</version>
-	</dependency>
-	<dependency>
-		<groupId>org.locationtech.jts</groupId>
-		<artifactId>jts-core</artifactId>
-		<version>1.15.1</version>
-	</dependency>
+        <groupId>com.marklogic</groupId>
+        <artifactId>marklogic-client-api</artifactId>
+        <version>4.0.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.2</version>
+    </dependency>
+    <!--Geoserver has the slf4j-api and slf4j-log4j12 jars,
+        but we need them when executing tests if we want to log anything to file or console-->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.25</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.21</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <repositories>
       <repository>

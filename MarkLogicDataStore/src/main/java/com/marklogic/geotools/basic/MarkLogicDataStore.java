@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentDataStore;
@@ -27,26 +28,43 @@ import com.marklogic.client.query.Tuple;
 import com.marklogic.client.query.ValuesDefinition;
 
 public class MarkLogicDataStore extends ContentDataStore {
+
 	DatabaseClient client;
 	DatabaseClientFactory.SecurityContext context;
-	
+
+	/**
+	 *
+	 * @param host
+	 * @param port
+	 * @param securityContext
+	 * @param database
+	 * @param namespace
+	 */
 	public MarkLogicDataStore(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database, String namespace) {
-		client = DatabaseClientFactory.newClient(host, port, securityContext);
+		if (database != null) {
+			client = DatabaseClientFactory.newClient(host, port, database, securityContext);
+		} else {
+			client = DatabaseClientFactory.newClient(host, port, securityContext);
+		}
 		setNamespaceURI(namespace);
 	}
 	
 	DatabaseClient getClient() {
 		return client;
 	}
-	
-	//Update this to return a better description of our data, this is just a placeholder for now
+
+	/**
+	 * Update this to return a better description of our data, this is just a placeholder for now
+	 * @return
+	 * @throws IOException
+	 */
 	protected List<Name> createTypeNames() throws IOException {
-		
-		System.out.println("**************************************************************************");
-		System.out.println("createTypeNames called!");
-		System.out.println("Datastore namespace: " + getNamespaceURI());
-		System.out.println("**************************************************************************");
-		
+
+		LOGGER.info("**************************************************************************");
+		LOGGER.info("createTypeNames called!");
+		LOGGER.info("Datastore namespace: " + getNamespaceURI());
+		LOGGER.info("**************************************************************************");
+
 		QueryManager queryMgr = client.newQueryManager();
 		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
 		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", "geotools");
@@ -62,23 +80,24 @@ public class MarkLogicDataStore extends ContentDataStore {
 			String localname = t.getValues()[1].get(String.class);
 			Name n = new NameImpl(ns, localname);
 			nameList.add(n);
-			System.out.println("**************************************************************************");
-			System.out.println("Adding " + n.toString() + " to typeNames");
-			System.out.println("**************************************************************************");
-			
+
+			LOGGER.info("**************************************************************************");
+			LOGGER.log(Level.INFO, () -> "Adding " + n.toString() + " to typeNames");
+			LOGGER.info("**************************************************************************");
 		}
-		
-		System.out.println("**************************************************************************");
-		System.out.println("Names returned: " + Arrays.toString(nameList.toArray()));
-		System.out.println("**************************************************************************");
+
+		LOGGER.info("**************************************************************************");
+		LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
+		LOGGER.info("**************************************************************************");
+
 		return nameList;
     }
 	
 	@Override
-    protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
-        System.out.println("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
+  protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
+    LOGGER.info("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
 		return new MarkLogicBasicFeatureSource(entry, Query.ALL);
-    }
+  }
 	
 
 	protected QueryDefinition createMarkLogicQueryDefinition(Query gtQuery, QueryManager queryMgr, String options) {
@@ -94,7 +113,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 	                    options +
 	                "</search>").withFormat(Format.XML);
 
-	    RawCombinedQueryDefinition query = 
+	    RawCombinedQueryDefinition query =
 	            queryMgr.newRawCombinedQueryDefinition(queryHandle);
 	    return query;
 	}
