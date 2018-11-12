@@ -7,6 +7,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.admin.QueryOptionsManager;
+import com.marklogic.client.document.DocumentManager;
 import com.marklogic.client.document.DocumentPage;
 import com.marklogic.client.document.JSONDocumentManager;
 import com.marklogic.client.document.ServerTransform;
@@ -45,7 +47,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private long pageLength = 20;
     private DocumentPage currentPage = null;
     
-    private JSONDocumentManager docMgr;
+    private DocumentManager docMgr;
     
     MarkLogicFeatureReader(ContentState contentState, Query query, String mlQuery) throws IOException {
         this.state = contentState;
@@ -63,7 +65,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
         	  "<transform-results apply='raw' />" +
   		    "</options>";
         QueryManager queryMgr = client.newQueryManager();
-        
+
         this.query = createMarkLogicQueryDefinition(query, queryMgr, options, mlQuery);
     }
     
