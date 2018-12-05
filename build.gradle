@@ -1,0 +1,39 @@
+
+plugins {
+    id "com.github.dkorotych.gradle-maven-exec" version "2.0"
+    id "net.saliman.properties" version "1.4.6"
+    id "com.marklogic.ml-gradle" version "3.10.2"
+}
+
+def geoserverLib = "${geoserverHome}/webapps/geoserver/WEB-INF/lib"
+
+// execute the Maven package for the MarkLogicDataStore sub-module
+// and download dependencies into MarkLogicDataStore/target/dependency
+task buildMarkLogicDataStore(type: MavenExec) {
+    workingDir "MarkLogicDataStore"
+    goals 'clean', 'package', 'dependency:copy-dependencies'
+}
+
+task deleteConflictingGeoserverJars(type: Delete) {
+    delete fileTree(dir: geoserverLib, include: ["slf4j-api-1.6.4.jar", "jackson-core-2.5.0.jar"])
+}
+
+task copyGeoserverPluginJars(type: Copy) {
+    def marklogicDataStoreTarget = "MarkLogicDataStore/target"
+    outputs.upToDateWhen {
+        false
+    }
+    from("${marklogicDataStoreTarget}") {
+        include '*.jar'
+    }
+    from("${marklogicDataStoreTarget}/dependency") {
+        include '*.jar'
+    }
+    into geoserverLib
+}
+
+task deployGeoserverPlugin(dependsOn: ['deleteConflictingGeoserverJars', 'copyGeoserverPluginJars']) {}
+deployGeoserverPlugin.mustRunAfter('buildMarkLogicDataStore')
+
+task build(dependsOn: 'buildMarkLogicDataStore')
+task deploy(dependsOn: ['build', 'deployGeoserverPlugin']){}
