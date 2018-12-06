@@ -26,7 +26,7 @@ task loadGeoToolsData(type: com.marklogic.gradle.task.MlcpTask) {
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
   input_file_path = "data"
-  input_compressed = "true"
+  input_file_type= "archive"
   transform_module = transformModule
   transform_function = "transform"
   batch_size = 1
@@ -39,7 +39,7 @@ task loadLandPolygonsAndCoastlines(type: com.marklogic.gradle.task.MlcpTask) {
   database = mlAppConfig.contentDatabaseName
   port = mlAppConfig.restPort
   input_file_path = "data/landPolygonsAndCoastlines"
-  input_compressed = "true"
+  input_file_type= "archive"
   transform_module = transformModule
   transform_function = "transform"
   batch_size = 1
