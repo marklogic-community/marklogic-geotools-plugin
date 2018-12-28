@@ -3,8 +3,10 @@ package com.marklogic.geotools.basic;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import org.apache.commons.collections4.IteratorUtils;
+import org.geotools.data.jdbc.FilterToSQL;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.logging.Logging;
+import org.json.simple.JSONObject;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.BinaryLogicOperator;
@@ -45,6 +47,7 @@ import org.opengis.filter.spatial.Disjoint;
 import org.opengis.filter.spatial.Equals;
 import org.opengis.filter.spatial.Intersects;
 import org.opengis.filter.spatial.Overlaps;
+import org.opengis.filter.spatial.SpatialOperator;
 import org.opengis.filter.spatial.Touches;
 import org.opengis.filter.spatial.Within;
 import org.opengis.filter.temporal.After;
@@ -74,6 +77,11 @@ import java.util.logging.Logger;
 public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	private static final Logger LOGGER = Logging.getLogger(FilterToMarkLogic.class);
+	
+	protected FilterToSQL sqlFilter = null;
+	protected String sqlFilterString = null;
+	protected FilterToMarkLogicSpatial spatialFilter = null;
+	
 //	private StructuredQueryBuilder qb;
 //	
 //	public FilterToMarkLogic() {
@@ -110,6 +118,34 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 		filterFactory = CommonFactoryFinder.getFilterFactory2();
 	}
 
+	@SuppressWarnings("unchecked") // necessary because org.json.simple.JSONObject extends HashMap, but doesn't support parameterization
+	public JSONObject generatePayload() {
+		JSONObject payload = new JSONObject(); // the final JSON payload to issue to MarkLogic via POST request
+		
+		JSONObject params = new JSONObject(); // params
+		params.put("method", "query"); // TODO: is this always the same?
+		params.put("id", "zipcodes"); // TODO: where should the id actually come from?
+		params.put("layer", 0); // TODO: where should the layer actually come from?
+		payload.put("params", params);
+		
+		JSONObject query = new JSONObject();
+		
+		if (spatialFilter != null) { // include the spatial filter
+			query.put("extension", spatialFilter.generatePayloadQueryExtension());
+			query.put("geometryType", spatialFilter.generatePayloadQueryGeometryType());
+			query.put("spatialRel", spatialFilter.generatePayloadQuerySpatialRel());
+			query.put("resultRecordCount", 5); // TODO: where should the id actually come from?
+			query.put("outFields", "*"); // TODO: where should the id actually come from?
+		}
+		
+		if (sqlFilter != null) { // include the sql filter
+			query.put("where", sqlFilterString);
+		}
+		
+		payload.put("query", query);
+		
+		return payload;
+	}
     /**
      * Sets the featuretype the encoder is encoding for.
      *
@@ -340,7 +376,13 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	@Override
 	public Object visit(Intersects filter, Object extraData) {
-		// create the Intersects filter with a PropertyName that doesn't matter and a geometry
+		return delegateToSpecificFilter(filter, extraData);
+		//spatialFilter = new FilterToMarkLogicSpatial();
+		//return spatialFilter.visit(filter, extraData); // TODO: create (and use) the method to determine if the filter is spatial and call it
+		
+		
+		
+/*		// create the Intersects filter with a PropertyName that doesn't matter and a geometry
 		// TODO: should this be pulled out similar to FilterToSql?
 		Expression propertyNameExpression = filter.getExpression1();
 		Expression literalExpression = filter.getExpression2();
@@ -368,7 +410,7 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 				GeospatialOperator.INTERSECTS,
 				qb.polygon(points));
 		return query;
-
+*/
 	}
 
 	@Override
@@ -472,5 +514,29 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException();
 	}
-
+	
+	private Object delegateToSpecificFilter(Filter filter, Object extraData) {
+		if (isFilterSpatial(filter)) {
+			spatialFilter = new FilterToMarkLogicSpatial();
+			return filter.accept(spatialFilter, extraData);
+		} else {
+			sqlFilter = new FilterToSQL();
+			try {
+				return filter.accept(sqlFilter, extraData);
+			} catch (RuntimeException e) {
+				if ("Subclasses must implement this method in order to handle geometries".equals(e.getMessage())) {
+					throw new RuntimeException("Spatial filter sent to SQL handler");
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+	}
+	
+	// TODO: consider moving these utility methods to another class
+	// TODO: some filters are probably applicable to spatial and scalar? (see http://docs.geotools.org/stable/javadocs/org/opengis/filter/spatial/SpatialOperator.html )
+	private static boolean isFilterSpatial(Filter filter) {
+		return filter instanceof SpatialOperator;
+	}
 }

@@ -43,6 +43,11 @@
       <version>${geotools.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-jdbc</artifactId>
+      <version>${geotools.version}</version>
+    </dependency>
+    <dependency>
         <groupId>com.marklogic</groupId>
         <artifactId>marklogic-client-api</artifactId>
         <version>4.0.4</version>
@@ -52,6 +57,18 @@
       <artifactId>commons-collections4</artifactId>
       <version>4.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>2.25.1</version>
+		<!-- 2.26 and later versions fail initiall with injectionmanagerfactory not found, then NPE loading properties if I add jersey.inject below -->
+    </dependency>
+	 <!--
+    <dependency>
+      <groupId>org.glassfish.jersey.inject</groupId>
+      <artifactId>jersey-hk2</artifactId>
+    </dependency>
+	 -->
     <!--Geoserver has the slf4j-api and slf4j-log4j12 jars,
         but we need them when executing tests if we want to log anything to file or console-->
     <dependency>

@@ -24,6 +24,14 @@ import java.io.InputStream;
 
 import java.util.Properties;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
@@ -36,6 +44,8 @@ import org.geotools.data.Transaction;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import org.json.simple.JSONObject;
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -50,6 +60,7 @@ public class MarkLogicTest {
 	protected DatabaseClient client;
 	protected FilterFactory2 filterFactory;
 	protected FilterToMarkLogic filterToMarklogic;
+	protected Invocation.Builder invocationBuilder;
 
 	public MarkLogicTest() throws IOException {
         // create client
@@ -64,6 +75,15 @@ public class MarkLogicTest {
 
         filterFactory = CommonFactoryFinder.getFilterFactory2();
         filterToMarklogic = new FilterToMarkLogic(client);
+        
+        
+		Client client = ClientBuilder.newClient();
+		HttpAuthenticationFeature authentication = HttpAuthenticationFeature.digest(username, password);
+		client.register(authentication);
+		WebTarget webTarget = client.target("http://" + hostname + ":" + port + "/LATEST");
+		WebTarget koopWebTarget = webTarget.path("resources/KoopProvider");
+		invocationBuilder = koopWebTarget.request(MediaType.APPLICATION_JSON);
+
 	}
 
 	public Properties loadProperties() throws IOException {
@@ -225,16 +245,28 @@ public class MarkLogicTest {
 				new Coordinate(14.0, 43.0), new Coordinate(15.0, 43.0), new Coordinate(14.0, 44.0),
 				new Coordinate(15.0, 44.0), new Coordinate(14.0, 43.0), };
 		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"), // this string doesn't actually matter
-				filterFactory.literal(new GeometryFactory().createPolygon(coordinates)));
+				//filterFactory.literal(new GeometryFactory().createPolygon(coordinates)));
+				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
 		StructuredQueryDefinition query = (StructuredQueryDefinition) intersects.accept(filterToMarklogic, null);
+		
+		JSONObject payload = filterToMarklogic.generatePayload();
+		System.out.println(payload.toString());
+		
+		
+		// hit the service
+		Response response = invocationBuilder.post(Entity.entity(payload.toJSONString(), MediaType.APPLICATION_JSON));
+		String result = response.readEntity(String.class);
+		
+		System.out.println(result);
+		
 
-		QueryManager qm = client.newQueryManager();
+/*		QueryManager qm = client.newQueryManager();
 		SearchHandle results = new SearchHandle();
 		qm.search(query, results);
 		long totalResults = results.getTotalResults();
     System.out.println(totalResults);
 		assertTrue(totalResults > 0);
-		// testIntersects end
+*/		// testIntersects end
 		System.out.println("\ntestIntersects elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
 /*
