@@ -3,7 +3,7 @@ package com.marklogic.geotools.basic;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import org.apache.commons.collections4.IteratorUtils;
-import org.geotools.data.jdbc.FilterToSQL;
+import org.geotools.data.jdbc.FilterToSQLException;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.logging.Logging;
 import org.json.simple.JSONObject;
@@ -72,14 +72,14 @@ import com.marklogic.client.query.StructuredQueryBuilder.GeospatialOperator;
 import com.marklogic.client.query.StructuredQueryBuilder.Point;
 import com.marklogic.client.query.StructuredQueryDefinition;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 
 public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 
 	private static final Logger LOGGER = Logging.getLogger(FilterToMarkLogic.class);
 	
-	protected FilterToSQL sqlFilter = null;
-	protected String sqlFilterString = null;
+	protected FilterToMarkLogicScalar scalarFilter = null;
 	protected FilterToMarkLogicSpatial spatialFilter = null;
 	
 //	private StructuredQueryBuilder qb;
@@ -138,8 +138,13 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 			query.put("outFields", "*"); // TODO: where should the id actually come from?
 		}
 		
-		if (sqlFilter != null) { // include the sql filter
-			query.put("where", sqlFilterString);
+		if (scalarFilter != null) { // include the scalar filter
+			try {
+				query.put("where", scalarFilter.getEncodedFilter());
+			} catch (IOException e) {
+				// TODO how to handle this
+				throw new RuntimeException(e);
+			}
 		}
 		
 		payload.put("query", query);
@@ -517,20 +522,33 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 	
 	private Object delegateToSpecificFilter(Filter filter, Object extraData) {
 		if (isFilterSpatial(filter)) {
-			spatialFilter = new FilterToMarkLogicSpatial();
-			return filter.accept(spatialFilter, extraData);
+			return delegateToSpatialFilter(filter, extraData);
 		} else {
-			sqlFilter = new FilterToSQL();
-			try {
-				return filter.accept(sqlFilter, extraData);
-			} catch (RuntimeException e) {
-				if ("Subclasses must implement this method in order to handle geometries".equals(e.getMessage())) {
-					throw new RuntimeException("Spatial filter sent to SQL handler");
-				}
-				else {
-					throw e;
-				}
+			return delegateToScalarFilter(filter, extraData);
+		}
+	}
+	
+	private Object delegateToSpatialFilter(Filter filter, Object extraData) {
+		spatialFilter = new FilterToMarkLogicSpatial();
+		return filter.accept(spatialFilter, extraData);
+	}
+	
+	private Object delegateToScalarFilter(Filter filter, Object extraData) {
+		scalarFilter = new FilterToMarkLogicScalar();
+		try {
+			//return filter.accept(scalarFilter, extraData);
+			scalarFilter.encode(filter);
+			return null;
+		} catch (RuntimeException e) {
+			if ("Subclasses must implement this method in order to handle geometries".equals(e.getMessage())) {
+				throw new RuntimeException("Spatial filter sent to scalar handler");
 			}
+			else {
+				throw e;
+			}
+		} catch (FilterToSQLException e) {
+			// TODO how to handle this
+			throw new RuntimeException(e);
 		}
 	}
 	
