@@ -557,4 +557,55 @@ public class FilterToMarkLogic implements FilterVisitor, ExpressionVisitor {
 	private static boolean isFilterSpatial(Filter filter) {
 		return filter instanceof SpatialOperator;
 	}
+	
+	private static boolean isFilterScalar(Filter filter) {
+		return !(filter instanceof SpatialOperator);
+	}
+	
+	private static boolean allLeafFiltersSpatial(Filter filter) {
+		if (filter instanceof And) {
+			for (Filter childFilter: ((And) filter).getChildren()) {
+				if (!allLeafFiltersSpatial(childFilter)) {
+					return false;
+				}
+			}
+			return true;
+		} else if (filter instanceof Or) {
+			for (Filter childFilter: ((And) filter).getChildren()) {
+				if (!allLeafFiltersSpatial(childFilter)) {
+					return false;
+				}
+			}
+			return true;
+		} else if (filter instanceof Not) {
+			return allLeafFiltersSpatial(((Not) filter).getFilter());
+		}
+		else {
+			return isFilterSpatial(filter);
+		}
+	}
+	
+	private static boolean allLeafFiltersScalar(Filter filter) {
+		if (filter instanceof And) {
+			for (Filter childFilter: ((And) filter).getChildren()) {
+				if (!allLeafFiltersScalar(childFilter)) {
+					return false;
+				}
+			}
+			return true;
+		} else if (filter instanceof Or) {
+			for (Filter childFilter: ((And) filter).getChildren()) {
+				if (!allLeafFiltersScalar(childFilter)) {
+					return false;
+				}
+			}
+			return true;
+		} else if (filter instanceof Not) {
+			return allLeafFiltersScalar(((Not) filter).getFilter());
+		}
+		else {
+			return isFilterScalar(filter);
+		}
+	}
+	
 }
