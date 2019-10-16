@@ -1,7 +1,5 @@
 package com.marklogic.geotools.basic;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import org.apache.commons.collections4.IteratorUtils;
 import org.geotools.data.jdbc.FilterToSQLException;
 import org.geotools.factory.CommonFactoryFinder;
