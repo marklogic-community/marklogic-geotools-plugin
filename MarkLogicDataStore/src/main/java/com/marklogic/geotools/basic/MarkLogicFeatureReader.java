@@ -56,7 +56,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
         MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
         client = ml.getClient(); // this may throw an IOException if it could not connect
         docMgr = client.newJSONDocumentManager();
-        docMgr.setReadTransform(new ServerTransform("geoJSONTransform"));
+        docMgr.setReadTransform(new ServerTransform(ml.getTransformName()));
         
         docMgr.setPageLength(pageLength);
         String options = 

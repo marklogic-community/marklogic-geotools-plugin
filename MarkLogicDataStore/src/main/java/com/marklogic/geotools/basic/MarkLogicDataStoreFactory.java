@@ -11,8 +11,6 @@ import java.util.logging.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 
-import com.marklogic.client.DatabaseClientFactory;
-import com.marklogic.client.DatabaseClientFactory.SecurityContext;
 import org.geotools.util.logging.Logging;
 
 public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
@@ -64,6 +62,54 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 					false,
 					null
 					);
+	public static final Param QUERY_MIME_TYPE_PARAM =
+            new Param(
+                    "queryMimeType",
+                    String.class,
+                    "application/json or application/xml",
+                    false,
+                    "application/json"
+            );
+	public static final Param LAYER_QUERY_PARAM =
+            new Param(
+                    "layerQuery",
+                    String.class,
+                    "Query to find available layers in the MarkLogic Database",
+                    false,
+                    "{\"query\": {\"queries\": [{\"collection-query\": {\"uri\": [\"typeDescriptors\"]}}]}}"
+            );
+    public static final Param BASE_QUERY_PARAM =
+            new Param(
+                    "baseQuery",
+                    String.class,
+                    "Serialized \"base\"query to limit results",
+                    false,
+                    "This should be a serialized query"
+            );
+    public static final Param OPTIONS_NAME_PARAM =
+            new Param (
+                    "optionsName",
+                    String.class,
+                    "MarkLogic Options definition",
+                    false,
+                    "geotools"
+            );
+    public static final Param TRANSFORM_NAME_PARAM =
+            new Param (
+                    "transformName",
+                    String.class,
+                    "Server side transformation to invoke for results",
+                    false,
+                    "geoJSONTransform"
+            );
+    public static final Param LAYER_QUERY_PROPERTY_PARAM =
+            new Param(
+                    "queryProperty",
+                    String.class,
+                    "The property in the Layer definition that identifies the query to be used for that layer",
+                    false,
+                    "definingQuery"
+            );
 
 	@Override
 	public String getDisplayName() {
@@ -77,7 +123,8 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public Param[] getParametersInfo() {
-		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM};
+		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM,
+                OPTIONS_NAME_PARAM, TRANSFORM_NAME_PARAM, QUERY_MIME_TYPE_PARAM, BASE_QUERY_PARAM, LAYER_QUERY_PARAM, LAYER_QUERY_PROPERTY_PARAM };
 	}
 
 	@Override
@@ -122,18 +169,19 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public DataStore createDataStore(Map<String, Serializable> params) throws IOException {
-		String host = (String) ML_HOST_PARAM.lookUp(params);
-		Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
-		String username = (String) ML_USERNAME_PARAM.lookUp(params);
-		String password = (String) ML_PASSWORD_PARAM.lookUp(params);
-		String database = (String) ML_DATABASE_PARAM.lookUp(params);
-		String namespace = (String) NAMESPACE_PARAM.lookUp(params);
+//		String host = (String) ML_HOST_PARAM.lookUp(params);
+//		Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
+//		String username = (String) ML_USERNAME_PARAM.lookUp(params);
+//		String password = (String) ML_PASSWORD_PARAM.lookUp(params);
+//		String database = (String) ML_DATABASE_PARAM.lookUp(params);
+//		String namespace = (String) NAMESPACE_PARAM.lookUp(params);
 
 		for (String k : params.keySet()) {
 			LOGGER.log(Level.INFO, () -> "param key: {}" + k);
 		}
-		SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-		return new MarkLogicDataStore(host, port, c, database, namespace);
+//		SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
+//		return new MarkLogicDataStore(host, port, c, database, namespace);
+		return new MarkLogicDataStore(params);
 	}
 
 	@Override

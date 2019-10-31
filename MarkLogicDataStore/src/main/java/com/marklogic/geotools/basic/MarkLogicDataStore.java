@@ -2,11 +2,11 @@ package com.marklogic.geotools.basic;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 import java.util.logging.Level;
 
+import com.marklogic.client.query.*;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
@@ -19,18 +19,17 @@ import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.TuplesHandle;
-import com.marklogic.client.query.QueryDefinition;
-import com.marklogic.client.query.QueryManager;
-import com.marklogic.client.query.RawCombinedQueryDefinition;
-import com.marklogic.client.query.StructuredQueryBuilder;
-import com.marklogic.client.query.StructuredQueryDefinition;
-import com.marklogic.client.query.Tuple;
-import com.marklogic.client.query.ValuesDefinition;
 
 public class MarkLogicDataStore extends ContentDataStore {
 
 	DatabaseClient client;
-	DatabaseClientFactory.SecurityContext context;
+	private String layerQueryPropertyName;
+	private String transformName;
+	private String optionsName;
+	private Format queryFormat; // Only Valid Values are "Format.XML" or "Format.JSON"
+	private StringHandle layerQuery;
+	private StringHandle baseQuery;
+
 
 	/**
 	 *
@@ -41,12 +40,59 @@ public class MarkLogicDataStore extends ContentDataStore {
 	 * @param namespace
 	 */
 	public MarkLogicDataStore(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database, String namespace) {
-		if (database != null) {
+		setupClient(host,port,securityContext,database);
+		setNamespaceURI(namespace);
+	}
+
+	/**
+	 * Creates a MarkLogic Data Store object using a MAP.  Should be passed from the MarkLogic Data Store Fatory class.
+	 * @param map Map<String, Serializable> with necessary details to create the data store.
+	 * @throws IOException
+	 */
+	public MarkLogicDataStore(Map<String, Serializable> map) throws IOException{
+		// extract properties
+		String host = (String) MarkLogicDataStoreFactory.ML_HOST_PARAM.lookUp(map);
+		Integer port = (Integer) MarkLogicDataStoreFactory.ML_PORT_PARAM.lookUp(map);
+		String username = (String) MarkLogicDataStoreFactory.ML_USERNAME_PARAM.lookUp(map);
+		String password = (String) MarkLogicDataStoreFactory.ML_PASSWORD_PARAM.lookUp(map);
+		String database = (String) MarkLogicDataStoreFactory.ML_DATABASE_PARAM.lookUp(map);
+		String namespace = (String) MarkLogicDataStoreFactory.NAMESPACE_PARAM.lookUp(map);
+
+		Format localFmt = Format.getFromMimetype((String) MarkLogicDataStoreFactory.QUERY_MIME_TYPE_PARAM.lookUp(map));
+		if (localFmt.equals(Format.JSON) || localFmt.equals(Format.XML)) {
+			this.queryFormat = localFmt;
+		}
+
+		if (Objects.nonNull((String) MarkLogicDataStoreFactory.LAYER_QUERY_PARAM.lookUp(map))) {
+			this.layerQuery = new StringHandle((String) MarkLogicDataStoreFactory.LAYER_QUERY_PARAM.lookUp(map)).withFormat(this.queryFormat);
+		}
+
+		if (Objects.nonNull((String) MarkLogicDataStoreFactory.BASE_QUERY_PARAM.lookUp(map))) {
+			this.baseQuery = new StringHandle((String) MarkLogicDataStoreFactory.BASE_QUERY_PARAM.lookUp(map)).withFormat(this.queryFormat);
+		}
+
+		if (Objects.nonNull((String) MarkLogicDataStoreFactory.OPTIONS_NAME_PARAM.lookUp(map))) {
+			this.optionsName = (String) MarkLogicDataStoreFactory.OPTIONS_NAME_PARAM.lookUp(map);
+		}
+
+		if (Objects.nonNull((String) MarkLogicDataStoreFactory.TRANSFORM_NAME_PARAM.lookUp(map))) {
+			this.transformName = (String) MarkLogicDataStoreFactory.TRANSFORM_NAME_PARAM.lookUp(map);
+		}
+
+		if (Objects.nonNull((String) MarkLogicDataStoreFactory.LAYER_QUERY_PROPERTY_PARAM.lookUp(map))) {
+			this.layerQueryPropertyName = (String) MarkLogicDataStoreFactory.LAYER_QUERY_PROPERTY_PARAM.lookUp(map);
+		}
+
+		setupClient(host,port,new DatabaseClientFactory.DigestAuthContext(username,password), database);
+		setNamespaceURI(namespace);
+	}
+
+	private void setupClient(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database) {
+		if (Objects.nonNull(database)) {
 			client = DatabaseClientFactory.newClient(host, port, database, securityContext);
 		} else {
 			client = DatabaseClientFactory.newClient(host, port, securityContext);
 		}
-		setNamespaceURI(namespace);
 	}
 	
 	DatabaseClient getClient() {
@@ -68,7 +114,9 @@ public class MarkLogicDataStore extends ContentDataStore {
 		QueryManager queryMgr = client.newQueryManager();
 		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
 		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", "geotools");
-		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
+		RawCombinedQueryDefinition querydef = queryMgr.newRawCombinedQueryDefinition(this.layerQuery);
+//		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
+		vdef.setQueryDefinition(querydef);
 		TuplesHandle results = queryMgr.tuples(vdef, new TuplesHandle());
 		List<Name> nameList = new ArrayList<>();
 		Tuple[] tuples = results.getTuples();
@@ -96,7 +144,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 	@Override
   protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
     LOGGER.info("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
-		return new MarkLogicBasicFeatureSource(entry, Query.ALL);
+		return new MarkLogicBasicFeatureSource(entry, Query.ALL, this.layerQueryPropertyName);
   }
 	
 
@@ -117,5 +165,52 @@ public class MarkLogicDataStore extends ContentDataStore {
 	            queryMgr.newRawCombinedQueryDefinition(queryHandle);
 	    return query;
 	}
-	
+
+	public String getLayerQueryPropertyName() {
+		return layerQueryPropertyName;
+	}
+
+	public void setLayerQueryPropertyName(String layerQueryPropertyName) {
+		this.layerQueryPropertyName = layerQueryPropertyName;
+	}
+
+	public String getTransformName() {
+		return transformName;
+	}
+
+	public void setTransformName(String transformName) {
+		this.transformName = transformName;
+	}
+
+	public String getOptionsName() {
+		return optionsName;
+	}
+
+	public void setOptionsName(String optionsName) {
+		this.optionsName = optionsName;
+	}
+
+	public Format getQueryFormat() {
+		return queryFormat;
+	}
+
+	public void setQueryFormat(Format queryFormat) {
+		this.queryFormat = queryFormat;
+	}
+
+	public StringHandle getLayerQuery() {
+		return layerQuery;
+	}
+
+	public void setLayerQuery(StringHandle layerQuery) {
+		this.layerQuery = layerQuery;
+	}
+
+	public StringHandle getBaseQuery() {
+		return baseQuery;
+	}
+
+	public void setBaseQuery(StringHandle baseQuery) {
+		this.baseQuery = baseQuery;
+	}
 }

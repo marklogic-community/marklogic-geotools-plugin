@@ -46,9 +46,11 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
 	private AttributeTypeBuilder attributeBuilder;
+	private String definingQueryPropertyName;
     
-	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query) {
+	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query, String queryLocation) {
 		super(entry, query);
+		this.definingQueryPropertyName = queryLocation;
 		attributeBuilder = new AttributeTypeBuilder(new FeatureTypeFactoryImpl());
 		retrieveDBMetadata(entry, query);
 	}
@@ -66,7 +68,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
 	    dbMetadata = handle.get();
 //	    LOGGER.info("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
-	    definingQuery = dbMetadata.get("definingQuery");
+	    definingQuery = dbMetadata.get(this.definingQueryPropertyName);
 	}
 
 	@Override
