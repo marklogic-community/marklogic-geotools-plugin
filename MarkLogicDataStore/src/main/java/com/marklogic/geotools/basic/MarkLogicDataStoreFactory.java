@@ -82,7 +82,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
             new Param(
                     "baseQuery",
                     String.class,
-                    "Serialized \"base\"query to limit results",
+                    "Serialized \"base\"query to limit results -- Currently Unused",
                     false,
                     "This should be a serialized query"
             );
@@ -91,7 +91,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
                     "optionsName",
                     String.class,
                     "MarkLogic Options definition",
-                    false,
+                    true,
                     "geotools"
             );
     public static final Param TRANSFORM_NAME_PARAM =
@@ -107,7 +107,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
                     "queryProperty",
                     String.class,
                     "The property in the Layer definition that identifies the query to be used for that layer",
-                    false,
+                    true,
                     "definingQuery"
             );
 

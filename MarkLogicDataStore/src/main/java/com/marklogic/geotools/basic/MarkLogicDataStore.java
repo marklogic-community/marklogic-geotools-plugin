@@ -113,7 +113,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 
 		QueryManager queryMgr = client.newQueryManager();
 		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
-		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", "geotools");
+		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", this.optionsName);
 		RawCombinedQueryDefinition querydef = queryMgr.newRawCombinedQueryDefinition(this.layerQuery);
 //		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
 		vdef.setQueryDefinition(querydef);
