@@ -111,34 +111,38 @@ public class MarkLogicDataStore extends ContentDataStore {
 		LOGGER.info("Datastore namespace: " + getNamespaceURI());
 		LOGGER.info("**************************************************************************");
 
-		QueryManager queryMgr = client.newQueryManager();
-		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
-		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", this.optionsName);
-		RawCombinedQueryDefinition querydef = queryMgr.newRawCombinedQueryDefinition(this.layerQuery);
-//		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
-		vdef.setQueryDefinition(querydef);
-		TuplesHandle results = queryMgr.tuples(vdef, new TuplesHandle());
-		List<Name> nameList = new ArrayList<>();
-		Tuple[] tuples = results.getTuples();
+// 		QueryManager queryMgr = client.newQueryManager();
+// 		StructuredQueryBuilder qb = queryMgr.newStructuredQueryBuilder();
+// 		ValuesDefinition vdef = queryMgr.newValuesDefinition("typeNamePlusNamespace", this.optionsName);
+// 		RawCombinedQueryDefinition querydef = queryMgr.newRawCombinedQueryDefinition(this.layerQuery);
+// //		vdef.setQueryDefinition(qb.collection("typeDescriptors"));
+// 		vdef.setQueryDefinition(querydef);
+// 		TuplesHandle results = queryMgr.tuples(vdef, new TuplesHandle());
+// 		List<Name> nameList = new ArrayList<>();
+// 		Tuple[] tuples = results.getTuples();
 		
-		for (Tuple t : tuples) {
-			//Name n = new NameImpl("http://www.opengeospatial.net/cite", v.get("string", String.class));
-			//nameList.add(n);
-			String ns = t.getValues()[0].get(String.class);
-			String localname = t.getValues()[1].get(String.class);
-			Name n = new NameImpl(ns, localname);
-			nameList.add(n);
+		GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(client);
+		
+		
+		try {
+			List<Name> nameList;
+			nameList = geoQueryServices.getLayerNames();
+			
+			ArrayList<String> uris = new ArrayList<String>();
+			for (Name n : nameList) {
+				uris.add(n.getURI());
+			}
+			LOGGER.info("**************************************************************************");
+			LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
+			LOGGER.info("**************************************************************************");
 
-			LOGGER.info("**************************************************************************");
-			LOGGER.log(Level.INFO, () -> "Adding " + n.toString() + " to typeNames");
-			LOGGER.info("**************************************************************************");
+			return nameList;
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ArrayList<Name>();
 		}
-
-		LOGGER.info("**************************************************************************");
-		LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
-		LOGGER.info("**************************************************************************");
-
-		return nameList;
     }
 	
 	@Override

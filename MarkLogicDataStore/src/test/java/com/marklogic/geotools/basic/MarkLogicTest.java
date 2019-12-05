@@ -149,7 +149,7 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("Land_Polygons");
+        SimpleFeatureType type = store.getSchema("SOMNAS_BRIDGE_SUPPORT_BOAT_0");
 
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType attribute count: " + type.getAttributeCount());

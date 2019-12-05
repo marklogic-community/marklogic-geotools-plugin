@@ -50,6 +50,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
     
 	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query, String queryLocation) {
 		super(entry, query);
+		System.out.println("In MarkLogicBasicFeatureSource()");
+		
 		this.definingQueryPropertyName = queryLocation;
 		attributeBuilder = new AttributeTypeBuilder(new FeatureTypeFactoryImpl());
 		retrieveDBMetadata(entry, query);
