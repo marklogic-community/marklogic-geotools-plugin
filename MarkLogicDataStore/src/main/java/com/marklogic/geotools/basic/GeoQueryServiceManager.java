@@ -51,17 +51,18 @@ public class GeoQueryServiceManager extends ResourceManager {
     return layerNames;
    }
    
-   public JsonNode getLayerSchema() throws Exception {
+   public JsonNode getLayerSchema(String layerName) throws Exception {
 	    ResourceServices services = getServices();
 	    RequestParameters params = new RequestParameters();
 	    params.add("service", NAME);
 
-	    String serviceParams = "{\"geoserver\": {\"method\":\"getLayerSchema\"}}";
+	    String serviceParams = "{\"geoserver\": {\"method\":\"getLayerSchema\", \"layerName\":\"" + layerName + "\"}}";
 	    ObjectMapper objectMapper = new ObjectMapper();
 	    
 	    JsonNode json = objectMapper.readTree(serviceParams);
 	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
 	    JsonNode result = resultHandle.get();
+	    System.out.println(result.toString());
 	    return result;
    }
 }

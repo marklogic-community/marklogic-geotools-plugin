@@ -39,6 +39,8 @@ import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.ValuesHandle;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.RawCombinedQueryDefinition;
+import com.marklogic.client.query.StructuredQueryBuilder;
+import com.marklogic.client.query.StructuredQueryDefinition;
 import com.marklogic.client.query.ValuesDefinition;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
@@ -58,19 +60,14 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	}
 	
 	protected void retrieveDBMetadata(ContentEntry entry, Query query) {
-		// create a query builder for the query options
-//	    StructuredQueryBuilder qb = new StructuredQueryBuilder();
-//	    StructuredQueryDefinition querydef = qb.and(
-//	    		qb.collection("typeDescriptors"),
-//	    		qb.value(qb.jsonProperty("namespace"), entry.getName().getNamespaceURI()),
-//	    		qb.value(qb.jsonProperty("typeName"), entry.getName().getLocalPart())
-//	    	    );
-	    JSONDocumentManager docMgr = getDataStore().getClient().newJSONDocumentManager();
-	    JacksonHandle handle = new JacksonHandle();
-	    docMgr.read(entry.getName().getNamespaceURI() + "/" + entry.getName().getLocalPart() + ".json", handle);
-	    dbMetadata = handle.get();
-//	    LOGGER.info("retrieveDBMetadata: dbMetadata: " + dbMetadata.toString());
-	    definingQuery = dbMetadata.get(this.definingQueryPropertyName);
+		
+		GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(getDataStore().getClient());
+		try {
+			dbMetadata=geoQueryServices.getLayerSchema(entry.getName().getLocalPart());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
