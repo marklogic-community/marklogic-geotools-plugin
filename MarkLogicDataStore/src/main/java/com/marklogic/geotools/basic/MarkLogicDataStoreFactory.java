@@ -62,54 +62,6 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 					false,
 					null
 					);
-	public static final Param QUERY_MIME_TYPE_PARAM =
-            new Param(
-                    "queryMimeType",
-                    String.class,
-                    "application/json or application/xml",
-                    false,
-                    "application/json"
-            );
-	public static final Param LAYER_QUERY_PARAM =
-            new Param(
-                    "layerQuery",
-                    String.class,
-                    "Query to find available layers in the MarkLogic Database",
-                    false,
-                    "{\"query\": {\"queries\": [{\"collection-query\": {\"uri\": [\"typeDescriptors\"]}}]}}"
-            );
-    public static final Param BASE_QUERY_PARAM =
-            new Param(
-                    "baseQuery",
-                    String.class,
-                    "Serialized \"base\"query to limit results -- Currently Unused",
-                    false,
-                    "This should be a serialized query"
-            );
-    public static final Param OPTIONS_NAME_PARAM =
-            new Param (
-                    "optionsName",
-                    String.class,
-                    "MarkLogic Options definition",
-                    true,
-                    "geotools"
-            );
-    public static final Param TRANSFORM_NAME_PARAM =
-            new Param (
-                    "transformName",
-                    String.class,
-                    "Server side transformation to invoke for results",
-                    false,
-                    "geoJSONTransform"
-            );
-    public static final Param LAYER_QUERY_PROPERTY_PARAM =
-            new Param(
-                    "queryProperty",
-                    String.class,
-                    "The property in the Layer definition that identifies the query to be used for that layer",
-                    true,
-                    "definingQuery"
-            );
 
 	@Override
 	public String getDisplayName() {
@@ -123,8 +75,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public Param[] getParametersInfo() {
-		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM,
-                OPTIONS_NAME_PARAM, TRANSFORM_NAME_PARAM, QUERY_MIME_TYPE_PARAM, BASE_QUERY_PARAM, LAYER_QUERY_PARAM, LAYER_QUERY_PROPERTY_PARAM };
+		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM};
 	}
 
 	@Override

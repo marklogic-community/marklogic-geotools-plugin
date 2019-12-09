@@ -1,29 +1,18 @@
 package com.marklogic.geotools.basic;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.StringReader;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.admin.QueryOptionsManager;
-import com.marklogic.client.document.DocumentManager;
-import com.marklogic.client.document.DocumentPage;
-import com.marklogic.client.document.JSONDocumentManager;
-import com.marklogic.client.document.ServerTransform;
-import com.marklogic.client.io.Format;
-import com.marklogic.client.io.InputStreamHandle;
-import com.marklogic.client.io.StringHandle;
-import com.marklogic.client.query.QueryDefinition;
-import com.marklogic.client.query.QueryManager;
-import com.marklogic.client.query.RawCombinedQueryDefinition;
-import com.marklogic.client.query.StructuredQueryBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentState;
-
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.util.logging.Logging;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -35,46 +24,44 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	/** State used when reading file */
     protected ContentState state;
     
-    protected DatabaseClient client;
+    protected GeoQueryServiceManager geoQueryServices;
     
+    private String serviceName;
+    private int layerId;
     /** The next feature */
     private SimpleFeature next;
     
-    /** The query that was submitted */
-    private QueryDefinition query;
-    
+    private String sqlQuery;
     private long index = 1;
     private long pageLength = 20;
-    private DocumentPage currentPage = null;
+    private int maxFeatures;
+    private int featuresRead = 0;
+    private JsonNode currentResponse;
+    private FeatureCollection<?, ?> currentFeatureCollection;
+    private FeatureIterator<?> currentPage = null;
     
-    private DocumentManager docMgr;
     
-    MarkLogicFeatureReader(ContentState contentState, Query query, String mlQuery) throws IOException {
+    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId) throws IOException {
         this.state = contentState;
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.toString());
         
+	    this.serviceName = serviceName;
+	    this.layerId = layerId;
+	    this.sqlQuery = "1=1"; //translate the Query above into sql
+	    if (query.isMaxFeaturesUnlimited()) {
+	    	this.maxFeatures = Integer.MAX_VALUE;
+	    }
+	    else {
+	    	this.maxFeatures = query.getMaxFeatures();
+	    }
+	    if (query.getStartIndex() != null) {
+	    	this.index = query.getStartIndex();
+	    }
+	    
         MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
-        client = ml.getClient(); // this may throw an IOException if it could not connect
-        docMgr = client.newJSONDocumentManager();
-        docMgr.setReadTransform(new ServerTransform(ml.getTransformName()));
-        
-        docMgr.setPageLength(pageLength);
-        String options = 
-        	"<options xmlns=\"http://marklogic.com/appservices/search\">" +
-  		      "<return-results>true</return-results>" +
-        	  "<transform-results apply='raw' />" +
-  		    "</options>";
-        QueryManager queryMgr = client.newQueryManager();
-
-        this.query = createMarkLogicQueryDefinition(query, queryMgr, options, mlQuery);
+        geoQueryServices = ml.getGeoQueryServiceManager(); // this may throw an IOException if it could not connect
     }
     
-    private QueryDefinition createMarkLogicQueryDefinition(Query query, QueryManager queryMgr, String options, String definingQuery) {
-    	StringHandle rawHandle =
-    		    new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery + "}}").withFormat(Format.JSON);
-			LOGGER.log(Level.INFO, () -> "rawHandle:\n" + rawHandle.get());
-    	return queryMgr.newRawCombinedQueryDefinition(rawHandle);
-    }
     
 	@Override
 	public SimpleFeatureType getFeatureType() {
@@ -91,38 +78,52 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		} else {
 				feature = readFeature();
 		}
-		LOGGER.log(Level.FINE, () -> "next(): successfully read feature, about to return it");
+		LOGGER.log(Level.INFO, () -> "next(): successfully read feature, about to return it");
 		return feature;
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
-		if (next != null) {
+		if (next != null && featuresRead <= maxFeatures) {
 			  return true;
     } else {
         next = readFeature(); // read next feature so we can check
-			  LOGGER.log(Level.FINE, () -> "hasNext(): set next to readFeature(), returning");
+			  LOGGER.log(Level.INFO, () -> "hasNext(): set next to readFeature(), returning");
         return next != null;
     }
 	}
 
-	private void readNextPage() {
-		InputStreamHandle handle = new InputStreamHandle();
-		LOGGER.log(Level.FINE, () -> "readNextPage(): query: " + query.toString());
-		currentPage = docMgr.search(query, index, handle);
+	private void readNextPage() throws IOException {
+		LOGGER.log(Level.INFO, () -> "readNextPage(): serviceName: " + serviceName + "\n"
+				+ "layerId: " + layerId + "\n"
+				+ "sqlQuery: " + sqlQuery + "\n"
+				+ "index: " + index + "\n"
+				+ "pageLength: " + pageLength
+				);
+		
+		try {
+			currentResponse = geoQueryServices.getFeatures(
+					serviceName,
+					layerId,
+					"1=1",
+					index,
+					pageLength);
+			
+			StringReader reader = new StringReader(currentResponse.toString());
+			FeatureJSON fj = new FeatureJSON();
+			currentFeatureCollection = fj.readFeatureCollection(reader);
+			currentPage = currentFeatureCollection.features();
+			index += pageLength;
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
+			throw new IOException(ex);
+		}
 	}
 	
-	private SimpleFeature readNextFeature() throws IOException {
-		InputStreamHandle h = new InputStreamHandle();
-		currentPage.nextContent(h);
-		FeatureJSON fj = new FeatureJSON();
-		InputStream s = h.get();
-		
-		LOGGER.log(Level.FINE, () -> "about to read stream into feature:");
-		SimpleFeature feature = fj.readFeature(s);
-		LOGGER.log(Level.FINE, () -> "successfully read stream into feature");
-		index++;
-		return feature;
+	private SimpleFeature readNextFeature() {
+		featuresRead++;
+		return (SimpleFeature)currentPage.next();
 	}
 
 	/**
@@ -138,12 +139,12 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     if (currentPage.hasNext()) {
     	return readNextFeature();
     }
-    else if (currentPage.hasNextPage()) {
+    else if (currentResponse.get("metadata").get("limitExceeded").asBoolean()) {
     	readNextPage();
     	return readNextFeature();
     }
     else {
-    	close();
+    	currentPage.close();
     	return null;
     }
   }

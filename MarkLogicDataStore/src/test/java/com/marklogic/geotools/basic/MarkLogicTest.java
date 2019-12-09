@@ -21,7 +21,7 @@ import com.marklogic.client.query.StructuredQueryDefinition;
 
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.io.StringReader;
 import java.util.Properties;
 
 import javax.ws.rs.client.Client;
@@ -35,14 +35,18 @@ import javax.ws.rs.core.Response;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
@@ -117,14 +121,25 @@ public class MarkLogicTest {
 
     @Test
     public void testFeatureJSON() throws IOException {
-      String s = "{\"type\":\"Feature\", \"properties\":{\"SORT_NAME\":null, \"DSG\":\"PPL\", \"RC\":3, \"GENERIC\":null, \"ELEV\":null, \"LONG_\":43.461561, \"NT\":\"NS\", \"UTM\":null, \"UGI\":null, \"MF\":\"M\", \"UNI\":null, \"GMF\":null, \"FEATURE_ID\":10007550, \"FL\":null, \"OBJECTID\":17070, \"USID3\":\"X\", \"USID1\":\"YM50YAR50AX1443A4-83S\", \"USID2\":\"CIB 01 Imagery\", \"FULL_NAME\":\"الجنبعية\", \"COMMENTS\":null, \"FC\":null, \"POP\":null, \"SHORT_FORM\":null, \"LAT\":14.628441, \"LC\":\"ara\", \"ADM1\":8, \"JOG\":null, \"CC2\":null, \"CC1\":\"YM\", \"ADM2\":null, \"GCC\":null, \"UFI\":222390, \"PC\":5}, \"geometry\":{\"type\":\"Point\", \"coordinates\":[14.6284410000001, 43.4615610000001]}}";
+      String s = "{\"type\":\"FeatureCollection\", \"metadata\":{\"name\":\"TestJoin\", \"maxRecordCount\":5000, \"fields\":[{\"name\":\"AGGREGATE_BANNER_MARKING\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"OBJECTID\", \"type\":\"Integer\", \"alias\":null}, {\"name\":\"GRAPH_SUBJECT_ID\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"GEOMETRY_WKT\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"OBSERVATION_TYPE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"OBJ_TYPE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"ACTIVITY_NAME\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"ACTIVITY_TYPE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"DEPLOYMENT_STATUS\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"ENTITY_ACTIVITY_CONFIDENCE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"ENTITY_CLASS_CONFIDENCE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"ENTITY_LOC_CONFIDENCE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"GENERAL_OBJECT_TYPE\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"INFORMATION_VIEW\", \"type\":\"String\", \"alias\":null, \"length\":1024}, {\"name\":\"IS_CONCEALED\", \"type\":\"Integer\", \"alias\":null}, {\"name\":\"R_FACILITY_1_GEOMETRY_WKT\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_FACILITY_1_LEGAL_NAME\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_FACILITY_1_NAME\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_ORGANISATION_1_ACTIVITY_TYPE\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\", \"type\":\"String\", \"length\":1024}, {\"name\":\"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\", \"type\":\"String\", \"length\":1024}], \"limitExceeded\":true, \"idField\":\"OBJECTID\", \"displayField\":\"NAME\"}, \"filtersApplied\":{\"geometry\":true, \"where\":true, \"offset\":true, \"limit\":true}, \"features\":[{\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1557369558, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":\"not deployed\", \"ENTITY_ACTIVITY_CONFIDENCE\":null, \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"HIGH\", \"GENERAL_OBJECT_TYPE\":null, \"INFORMATION_VIEW\":\"AS ADVERTISED\", \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"LINESTRING (19 27,20 28)\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"w6ZkYsC\", \"R_FACILITY_1_NAME\":\"Compaq\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"CEREMONY COMMISSIONING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1559195138, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":\"AUj7M\", \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":null, \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"HIGH\", \"GENERAL_OBJECT_TYPE\":null, \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((22 55.5,23 55.5,23 56.5,22 56.5,22 55.5))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"0wUwxeJ\", \"R_FACILITY_1_NAME\":\"Cincom\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"AGRICULTURE IRRIGATION\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"LOW\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1554038580, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":\"AGRICULTURE CROP DRYING\", \"DEPLOYMENT_STATUS\":\"not deployed\", \"ENTITY_ACTIVITY_CONFIDENCE\":\"LOW\", \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":null, \"GENERAL_OBJECT_TYPE\":\"TyHXb\", \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":false, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((24 28,25 28,25 29,24 29,24 28))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"JsjDFGl\", \"R_FACILITY_1_NAME\":\"Tucows\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"BARRICADING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"CONFIRMED\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1556154762, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":\"TzMZh\", \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":\"LOW\", \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"LOW\", \"GENERAL_OBJECT_TYPE\":\"z9cJo\", \"INFORMATION_VIEW\":\"AS COLLABORATED\", \"IS_CONCEALED\":null, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((22 55.5,23 55.5,23 56.5,22 56.5,22 55.5))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"qg8lo6G\", \"R_FACILITY_1_NAME\":\"Cincom\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"CEREMONY COMMISSIONING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"CONFIRMED\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1555240090, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":\"ZrNCs\", \"ACTIVITY_TYPE\":\"BIO-MANUFACTURING\", \"DEPLOYMENT_STATUS\":\"not deployed\", \"ENTITY_ACTIVITY_CONFIDENCE\":null, \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"HIGH\", \"GENERAL_OBJECT_TYPE\":\"F1Bwr\", \"INFORMATION_VIEW\":\"AS ADVERTISED\", \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((34 61,35 61,35 62,34 62,34 61))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"CONFIRMED\", \"R_FACILITY_1_LEGAL_NAME\":\"PQwIMww\", \"R_FACILITY_1_NAME\":\"CKX, Inc.\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"AGRICULTURE HARVESTING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"LOW\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1559538302, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":\"DISASTER RESPONSE EMERGENCY OPERATIONS\", \"DEPLOYMENT_STATUS\":\"not deployed\", \"ENTITY_ACTIVITY_CONFIDENCE\":\"CONFIRMED\", \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"CONFIRMED\", \"GENERAL_OBJECT_TYPE\":null, \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((24 28,25 28,25 29,24 29,24 28))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"QjGHue7\", \"R_FACILITY_1_NAME\":\"Tucows\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"CEREMONY COMMISSIONING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1553735537, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":\"UQd59\", \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":\"CONFIRMED\", \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":null, \"GENERAL_OBJECT_TYPE\":\"CWduN\", \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"LINESTRING (15 27,16 28)\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"LOW\", \"R_FACILITY_1_LEGAL_NAME\":\"Dozb5vB\", \"R_FACILITY_1_NAME\":\"Grundig\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"ACCURACY TESTING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"MODERATE\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"HIGH\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1551397072, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":null, \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":\"LOW\", \"GENERAL_OBJECT_TYPE\":null, \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":null, \"R_FACILITY_1_GEOMETRY_WKT\":\"POLYGON ((22 55.5,23 55.5,23 56.5,22 56.5,22 55.5))\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_FACILITY_1_LEGAL_NAME\":\"2T3GR05\", \"R_FACILITY_1_NAME\":\"Cincom\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"CBWMATERIAL DESTRUCTION\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1558759818, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":\"BIO-MANUFACTURING\", \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":null, \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":null, \"GENERAL_OBJECT_TYPE\":\"UAbMy\", \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":null, \"R_FACILITY_1_GEOMETRY_WKT\":\"LINESTRING (15 27,16 28)\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"LOW\", \"R_FACILITY_1_LEGAL_NAME\":\"n1baB7l\", \"R_FACILITY_1_NAME\":\"Grundig\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"COUNTER SMUGGLING OPERATIONS\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"HIGH\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"CONFIRMED\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"LOW\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}, {\"type\":\"Feature\", \"properties\":{\"AGGREGATE_BANNER_MARKING\":\"UNCLASSIFIED\", \"OBJECTID\":1558708533, \"GRAPH_SUBJECT_ID\":\"guide://9999/ad632f86-f02b-4eef-9098-693a4dce6ff5\", \"GEOMETRY_WKT\":\"POLYGON ((33.5 40,34.5 40,34.5 41,33.5 41,33.5 40))\", \"OBSERVATION_TYPE\":\"soc:ObjectObservation\", \"OBJ_TYPE\":\"somnas:SparkIgnitionEngine\", \"ACTIVITY_NAME\":null, \"ACTIVITY_TYPE\":null, \"DEPLOYMENT_STATUS\":null, \"ENTITY_ACTIVITY_CONFIDENCE\":\"HIGH\", \"ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"ENTITY_LOC_CONFIDENCE\":null, \"GENERAL_OBJECT_TYPE\":null, \"INFORMATION_VIEW\":null, \"IS_CONCEALED\":true, \"R_FACILITY_1_GEOMETRY_WKT\":\"LINESTRING (17 31,18 32)\", \"R_FACILITY_1_ENTITY_CLASS_CONFIDENCE\":\"CONFIRMED\", \"R_FACILITY_1_LEGAL_NAME\":\"4IgUbiS\", \"R_FACILITY_1_NAME\":\"Accenture\", \"R_ORGANISATION_1_ACTIVITY_TYPE\":\"AGRICULTURE HARVESTING\", \"R_ORGANISATION_1_ENTITY_CLASS_CONFIDENCE\":\"MODERATE\", \"R_ORGANISATION_1_ENTITY_IDENT_CONFIDENCE\":\"LOW\", \"R_ORGANISATION_1_ENTITY_LOC_CONFIDENCE\":\"MODERATE\"}, \"geometry\":{\"type\":\"Polygon\", \"coordinates\":[[[33.5, 40], [34.5, 40], [34.5, 41], [33.5, 41], [33.5, 40]]]}}]}";
       FeatureJSON j = new FeatureJSON();
-      SimpleFeature sf = j.readFeature(s);
-      System.out.println(sf);
+      FeatureCollection<SimpleFeatureType, SimpleFeature> fc = j.readFeatureCollection(new StringReader(s));
+      FeatureIterator<SimpleFeature> iter = fc.features();
+      while (iter.hasNext()) {
+    	  SimpleFeature f = iter.next();
+    	  System.out.println(f);
+    	  System.out.println(f.getFeatureType().getTypeName());
+    	  System.out.println(f.getProperty("OBJECTID").getValue());
+    	  System.out.println(f.getProperty("AGGREGATE_BANNER_MARKING").getValue());
+    	  System.out.println(f.getAttribute("geometry") instanceof Polygon);
+    	  System.out.println(f.getAttribute("geometry").toString());
+      }
+      /*
       assertEquals("feature", sf.getFeatureType().getTypeName());
       assertEquals("PPL", sf.getProperty("DSG").getValue());
       assertTrue(sf.getAttribute("geometry") instanceof Point);
       assertEquals( 14.6284410000001, ((Point)sf.getAttribute("geometry")).getX(), 0.0001);
+      */
     }
     
     @Test
@@ -223,24 +238,28 @@ public class MarkLogicTest {
         System.out.println("\ntestBounds end\n");
     }
     
-    //@Test
-    public void example3() throws IOException {
-        System.out.println("example3 start\n");
+    @Test
+    public void testSimpleFeatureReader() throws IOException {
+        System.out.println("testSimpleFeatureReader start\n");
         long startTime = System.currentTimeMillis();
         Properties p = loadProperties();
         
-        DataStore datastore = DataStoreFinder.getDataStore(p);
-
-        Query query = new Query("http://marklogic.com:Clans");
+        DataStore store = DataStoreFinder.getDataStore(p);
+        SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
+        SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
+        Query q = new Query("TEST_JOIN_0", Filter.INCLUDE);
+        q.setMaxFeatures(10);
+        q.setStartIndex(1);
+//        SimpleFeatureCollection fc = source.getFeatures(q);
 
         System.out.println("open feature reader");
 
         try (FeatureReader<SimpleFeatureType, SimpleFeature> reader =
-                 datastore.getFeatureReader(query, Transaction.AUTO_COMMIT)) {
+                 store.getFeatureReader(q, Transaction.AUTO_COMMIT)) {
           int count = 0;
           while (reader.hasNext()) {
             SimpleFeature feature = reader.next();
-            System.out.println("  " + feature.getID() + " " + feature.getAttribute("ADM1"));
+            System.out.println("  " + feature.getID() + " " + feature.getAttribute("OBJECTID"));
             count++;
           }
           System.out.println("close feature reader");
@@ -248,7 +267,7 @@ public class MarkLogicTest {
         }
 
         // example3 end
-        System.out.println("\nexample3 elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
+        System.out.println("\testSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
 
 	@Test

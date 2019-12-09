@@ -45,20 +45,17 @@ import com.marklogic.client.query.ValuesDefinition;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private static final Logger LOGGER = Logging.getLogger(MarkLogicBasicFeatureSource.class);
-	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
 	private String serviceName;
 	private int layerId;
 	private AttributeTypeBuilder attributeBuilder;
-	private String definingQueryPropertyName;
 	
-	private GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(getDataStore().getClient());
+	private GeoQueryServiceManager geoQueryServices = getDataStore().getGeoQueryServiceManager();
     
-	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query, String queryLocation) {
+	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query) {
 		super(entry, query);
 		System.out.println("In MarkLogicBasicFeatureSource()");
 		
-		this.definingQueryPropertyName = queryLocation;
 		attributeBuilder = new AttributeTypeBuilder(new FeatureTypeFactoryImpl());
 		retrieveDBMetadata(entry, query);
 	}
@@ -118,7 +115,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
-		return new MarkLogicFeatureReader(getState(), query, definingQuery.toString());
+		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId);
 	}
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {

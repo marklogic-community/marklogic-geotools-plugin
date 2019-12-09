@@ -35,8 +35,8 @@ public class GeoQueryServiceManager extends ResourceManager {
 
     String serviceParams = "{\"geoserver\": {\"method\":\"getLayerNames\"}}";
     ObjectMapper objectMapper = new ObjectMapper();
-
     JsonNode json = objectMapper.readTree(serviceParams);
+    
     JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
     JsonNode result = resultHandle.get();
     ArrayList<Name> layerNames = new ArrayList<Name>();
@@ -59,8 +59,8 @@ public class GeoQueryServiceManager extends ResourceManager {
 
 	    String serviceParams = "{\"geoserver\": {\"method\":\"getLayerSchema\", \"layerName\":\"" + layerName + "\"}}";
 	    ObjectMapper objectMapper = new ObjectMapper();
-	    
 	    JsonNode json = objectMapper.readTree(serviceParams);
+	    
 	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
 	    JsonNode result = resultHandle.get();
 	    System.out.println(result.toString());
@@ -73,13 +73,35 @@ public class GeoQueryServiceManager extends ResourceManager {
 	    params.add("service", NAME);
 
 	    String serviceParams = "{\"params\": {\"method\":\"query\", \"id\":\"" + serviceName + "\", \"layer\":" + layerId + "}, \"query\":{\"returnCountOnly\":\"true\"}}";
-	    ObjectMapper objectMapper = new ObjectMapper();
-	    
+	    ObjectMapper objectMapper = new ObjectMapper();	    
 	    JsonNode json = objectMapper.readTree(serviceParams);
+	    
 	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
 	    JsonNode result = resultHandle.get();
 	    System.out.println("Count result:");
 	    System.out.println(result.toString());
 	    return result.get("count").asInt();
+   }
+   
+   public JsonNode getFeatures(String serviceName, int layerId, String sqlQuery, long index, long pageSize) throws Exception {
+	   ResourceServices services = getServices();
+	   RequestParameters params = new RequestParameters();
+	   params.add("service", NAME);
+	   
+	   String query = sqlQuery;
+	   if (sqlQuery == null) query = "1=1";
+	   
+	   String serviceParams = "{\"params\": "
+	   		+ "{\"method\":\"query\", \"id\":\"" + serviceName + "\", \"layer\":" + layerId + "}, "
+	   		+ "\"query\":{\"resultOffset\":" + index + ", \"resultRecordCount\":" + pageSize + ", \"where\":\"" + query + "\", \"returnGeometry\":true}}";
+	   
+	   ObjectMapper objectMapper = new ObjectMapper();	    
+	   JsonNode json = objectMapper.readTree(serviceParams);
+	   
+	   JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
+	   JsonNode result = resultHandle.get();
+	   System.out.println("getFeatures result:");
+	   System.out.println(result.toString());
+	   return result;	    
    }
 }
