@@ -149,7 +149,7 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("SOMNAS_BRIDGE_SUPPORT_BOAT_0");
+        SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
 
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType attribute count: " + type.getAttributeCount());
@@ -171,10 +171,10 @@ public class MarkLogicTest {
         System.out.println("attribute 0 binding: " + attributeDescriptor.getType().getBinding());
 
         // access by name
-        AttributeDescriptor cityDescriptor = type.getDescriptor("scalerank");
-        System.out.println("attribute 'Land_Polygons'    name: " + cityDescriptor.getName());
-        System.out.println("attribute 'Land_Polygons'    type: " + cityDescriptor.getType().toString());
-        System.out.println("attribute 'Land_Polygons' binding: " + cityDescriptor.getType().getBinding());
+        AttributeDescriptor activityTypeDescriptor = type.getDescriptor("ACTIVITY_TYPE");
+        System.out.println("attribute 'ACTIVITY_TYPE'    name: " + activityTypeDescriptor.getName());
+        System.out.println("attribute 'ACTIVITY_TYPE'    type: " + activityTypeDescriptor.getType().toString());
+        System.out.println("attribute 'ACTIVITY_TYPE' binding: " + activityTypeDescriptor.getType().getBinding());
 
         // default geometry
         GeometryDescriptor geometryDescriptor = type.getGeometryDescriptor();

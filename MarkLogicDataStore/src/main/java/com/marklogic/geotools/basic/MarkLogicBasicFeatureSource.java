@@ -196,8 +196,13 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		builder.setSRS( "EPSG:4326" );
 		builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
-		JsonNode schema = dbMetadata.get("schema");
-
+		JsonNode metadata = dbMetadata.get("metadata");
+		JsonNode schema = metadata.get("fields");
+		
+		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
+		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor("geometry", geoBinding);
+		builder.add(geoAttrDesc);
+		
 		for (JsonNode node : schema) {
 			String name = node.get("name").asText();
 			Class<?> binding = toClass(node);
@@ -209,6 +214,24 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		return builder.buildFeatureType();
 	}
 
+	protected Class geometryToClass(String geoType) {
+		Class binding = String.class;
+
+		if ("Point".contentEquals(geoType)) {
+			binding = Point.class;
+		}
+		else if ("Linestring".contentEquals(geoType)) {
+			binding = LineString.class;
+		}
+		else if ("Polygon".contentEquals(geoType)) {
+			binding = Polygon.class;
+		}
+		else if ("MultiPolygon".contentEquals(geoType)) {
+			binding = MultiPolygon.class;
+		}
+		return binding;
+	}
+	
 	protected Class toClass(JsonNode node) {
 		Class binding = String.class;
 		String type = node.get("type").asText();
@@ -228,22 +251,19 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 				binding = MultiPolygon.class;
 			}
 		}
-		else if ("string".contentEquals(type)) {
+		else if ("String".contentEquals(type)) {
 			binding = String.class;
 		}
-		else if ("int".contentEquals(type)) {
+		else if ("Integer".contentEquals(type)) {
 			binding = Integer.class;
 		}
-		else if ("float".contentEquals(type)) {
-			binding = Float.class;
-		}
-		else if ("double".contentEquals(type)) {
+		else if ("Double".contentEquals(type)) {
 			binding = Double.class;
 		}
 		else if ("boolean".contentEquals(type)) {
 			binding = Boolean.class;
 		}
-		else if ("dateTime".contentEquals(type)) {
+		else if ("Date".contentEquals(type)) {
 			binding = Date.class;
 		}
 		return binding;
