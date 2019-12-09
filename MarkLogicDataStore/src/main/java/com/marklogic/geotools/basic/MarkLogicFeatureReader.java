@@ -71,26 +71,30 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	
 	@Override
 	public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
-		SimpleFeature feature;
-		if (next != null) {
-				feature = next;
-				next = null;
-		} else {
-				feature = readFeature();
-		}
+		SimpleFeature feature = readFeature();
 		LOGGER.log(Level.INFO, () -> "next(): successfully read feature, about to return it");
 		return feature;
 	}
 
 	@Override
 	public boolean hasNext() throws IOException {
+		LOGGER.log(Level.INFO, () -> "hasNext(): entered; currentPage: " + currentPage);
+		if (currentPage == null) {
+			readNextPage();
+		}
+		return currentPage.hasNext() && featuresRead <= maxFeatures;
+		/*
+		LOGGER.log(Level.INFO, () -> "hasNext(): entered");
 		if (next != null && featuresRead <= maxFeatures) {
+			LOGGER.log(Level.INFO, () -> "hasNext(): next != null, featuresRead = " + featuresRead);
 			  return true;
     } else {
+    	LOGGER.log(Level.INFO, () -> "hasNext(): next: " + next + "; featuresRead: " + featuresRead);
         next = readFeature(); // read next feature so we can check
 			  LOGGER.log(Level.INFO, () -> "hasNext(): set next to readFeature(), returning");
         return next != null;
     }
+    */
 	}
 
 	private void readNextPage() throws IOException {
@@ -123,6 +127,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	
 	private SimpleFeature readNextFeature() {
 		featuresRead++;
+		LOGGER.log(Level.INFO, () -> "readNextFeature(): featuresRead: " + featuresRead);
 		return (SimpleFeature)currentPage.next();
 	}
 

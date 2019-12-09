@@ -84,6 +84,7 @@ public class GeoQueryServiceManager extends ResourceManager {
    }
    
    public JsonNode getFeatures(String serviceName, int layerId, String sqlQuery, long index, long pageSize) throws Exception {
+	   System.out.println("GeoQueryServiceManager.getFeatures(): index = " + index + "; pageSize = " + pageSize);
 	   ResourceServices services = getServices();
 	   RequestParameters params = new RequestParameters();
 	   params.add("service", NAME);
