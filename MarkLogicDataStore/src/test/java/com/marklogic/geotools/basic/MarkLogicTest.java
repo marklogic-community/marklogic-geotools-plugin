@@ -41,7 +41,9 @@ import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
+import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.NameImpl;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.referencing.CRS;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
@@ -187,6 +189,20 @@ public class MarkLogicTest {
 
         // example2 end
         System.out.println("\ntestSchema end\n");
+    }
+    
+    @Test
+    public void testCount() throws Exception {
+    	System.out.println("testBounds start\n");
+        Properties p = loadProperties();
+
+        DataStore store = DataStoreFinder.getDataStore(p);
+
+        SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
+        SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
+        int count = source.getCount(new Query("", Filter.INCLUDE));
+        System.out.println("TEST_JOIN_0 count: " + count);
+        System.out.println("\ntestCount end\n");
     }
     
     @Test

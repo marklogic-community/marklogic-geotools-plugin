@@ -26,7 +26,8 @@ public class GeoQueryServiceManager extends ResourceManager {
        // Initialize the Resource Manager via the Database Client
       client.init(NAME, this);
    }
-
+    
+    
    public List<Name> getLayerNames() throws Exception {
     ResourceServices services = getServices();
     RequestParameters params = new RequestParameters();
@@ -64,5 +65,21 @@ public class GeoQueryServiceManager extends ResourceManager {
 	    JsonNode result = resultHandle.get();
 	    System.out.println(result.toString());
 	    return result;
+   }
+   
+   public int getLayerFeatureCount(String serviceName, int layerId) throws Exception {
+	   	ResourceServices services = getServices();
+	    RequestParameters params = new RequestParameters();
+	    params.add("service", NAME);
+
+	    String serviceParams = "{\"params\": {\"method\":\"query\", \"id\":\"" + serviceName + "\", \"layer\":" + layerId + "}, \"query\":{\"returnCountOnly\":\"true\"}}";
+	    ObjectMapper objectMapper = new ObjectMapper();
+	    
+	    JsonNode json = objectMapper.readTree(serviceParams);
+	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
+	    JsonNode result = resultHandle.get();
+	    System.out.println("Count result:");
+	    System.out.println(result.toString());
+	    return result.get("count").asInt();
    }
 }

@@ -47,8 +47,12 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private static final Logger LOGGER = Logging.getLogger(MarkLogicBasicFeatureSource.class);
 	private JsonNode definingQuery;
 	private JsonNode dbMetadata;
+	private String serviceName;
+	private int layerId;
 	private AttributeTypeBuilder attributeBuilder;
 	private String definingQueryPropertyName;
+	
+	private GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(getDataStore().getClient());
     
 	public MarkLogicBasicFeatureSource(ContentEntry entry, Query query, String queryLocation) {
 		super(entry, query);
@@ -61,9 +65,11 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	
 	protected void retrieveDBMetadata(ContentEntry entry, Query query) {
 		
-		GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(getDataStore().getClient());
 		try {
 			dbMetadata=geoQueryServices.getLayerSchema(entry.getName().getLocalPart());
+			serviceName = dbMetadata.get("serviceName").asText();
+			layerId = dbMetadata.get("metadata").get("id").asInt();
+			System.out.println("serviceName: " + serviceName + " layerId: " + layerId);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -134,22 +140,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	@Override
 	protected int getCountInternal(Query query) throws IOException {
 		if (query.getFilter() == Filter.INCLUDE) {
-			DatabaseClient client = getDataStore().getClient();
 			try {
-				QueryManager qm = client.newQueryManager();
-				String JSON_OPTIONS = "\"options\": {\"return-results\": false}";
-				StringHandle rawHandle =
-							new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "," + JSON_OPTIONS + "}}").withFormat(Format.JSON);
-				LOGGER.info("rawHandle:\n" + rawHandle.get());
-				RawCombinedQueryDefinition queryDef =
-							qm.newRawCombinedQueryDefinition(rawHandle);
-
-				LOGGER.info("getCountInternal(): running query\n" + rawHandle.get());
-				SearchHandle resultsHandle = new SearchHandle();
-				// run the search
-				qm.search(queryDef, resultsHandle);
-				LOGGER.info(resultsHandle.getQueryCriteria().toString());
-				int count = (int) resultsHandle.getTotalResults();
+				int count = geoQueryServices.getLayerFeatureCount(serviceName, layerId);
 				LOGGER.log(Level.INFO, () -> "getCountInternal(): query returned " + count + " results");
 				return count;
 			}
