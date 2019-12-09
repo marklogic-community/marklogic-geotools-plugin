@@ -212,12 +212,12 @@ public class MarkLogicTest {
 
         DataStore store = DataStoreFinder.getDataStore(p);
 
-        SimpleFeatureType type = store.getSchema("Land_Polygons");
+        SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
 
-        FeatureSource fs = store.getFeatureSource("Land_Polygons");
+        FeatureSource fs = store.getFeatureSource("TEST_JOIN_0");
         System.out.println("featureType  name: " + type.getName());
         System.out.println("featureType count: " + fs.getCount(new Query("", Filter.INCLUDE)));
-        System.out.println("featureType bounds: " + store.getFeatureSource("Land_Polygons").getBounds());
+        System.out.println("featureType bounds: " + store.getFeatureSource("TEST_JOIN_0").getBounds());
 
         // example2 end
         System.out.println("\ntestBounds end\n");

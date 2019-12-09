@@ -87,54 +87,16 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		LOGGER.log(Level.INFO, () -> "*******************************************************************");
 		LOGGER.log(Level.INFO, () -> "in MarkLogicBasicFeatureSource:getBoundsInternal");
 
-		DatabaseClient client = getDataStore().getClient();
-		String optionsName = getDataStore().getOptionsName();
-		try {
-			QueryManager qm = client.newQueryManager();
-
-			StringHandle rawHandle =
-						new StringHandle("{\"search\":{\"ctsquery\":" + definingQuery.toString() + "}}").withFormat(Format.JSON);
-			LOGGER.log(Level.INFO, () -> "rawHandle:\n" + rawHandle.get());
-			RawCombinedQueryDefinition querydef =
-						qm.newRawCombinedQueryDefinition(rawHandle);
-
-			ValuesDefinition vdef = qm.newValuesDefinition("box-west", optionsName);
-			vdef.setQueryDefinition(querydef);
-			vdef.setAggregate("min");
-
-			ValuesHandle westH = qm.values(vdef, new ValuesHandle());
-			float west = westH.getAggregate("min").get("xs:float", Float.class);
-
-			vdef = qm.newValuesDefinition("box-east", optionsName);
-			vdef.setQueryDefinition(querydef);
-			vdef.setAggregate("max");
-			ValuesHandle eastH = qm.values(vdef, new ValuesHandle());
-			float east = eastH.getAggregate("max").get("xs:float", Float.class);
-
-			vdef = qm.newValuesDefinition("box-south", optionsName);
-			vdef.setQueryDefinition(querydef);
-			vdef.setAggregate("min");
-			ValuesHandle southH = qm.values(vdef, new ValuesHandle());
-			float south = southH.getAggregate("min").get("xs:float", Float.class);
-
-			vdef = qm.newValuesDefinition("box-north", optionsName);
-			vdef.setQueryDefinition(querydef);
-			vdef.setAggregate("max");
-			ValuesHandle northH = qm.values(vdef, new ValuesHandle());
-			float north = northH.getAggregate("max").get("xs:float", Float.class);
-
-			LOGGER.log(Level.INFO, () -> "west: " + west);
-			LOGGER.log(Level.INFO, () -> "east: " + east);
-			LOGGER.log(Level.INFO, () -> "north: " + north);
-			LOGGER.log(Level.INFO, () -> "south: " + south);
-			LOGGER.log(Level.INFO, () -> "*******************************************************************");
-
-			return new ReferencedEnvelope(west, east, south, north, DefaultGeographicCRS.WGS84);
-		}
-		catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "unable to parse bounds", ex);
-			return null;
-		}
+		JsonNode extent = dbMetadata.get("metadata").get("extent");
+		LOGGER.log(Level.INFO, () -> "Extent: " + extent.toString());
+		
+		ReferencedEnvelope env = new ReferencedEnvelope(
+				extent.get("xmin").asDouble(), 
+				extent.get("xmax").asDouble(),
+				extent.get("ymin").asDouble(),
+				extent.get("ymax").asDouble(),
+				DefaultGeographicCRS.WGS84);
+		return env;
 	}
 
 	@Override
