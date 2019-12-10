@@ -248,7 +248,7 @@ public class MarkLogicTest {
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
         SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
         Query q = new Query("TEST_JOIN_0", Filter.INCLUDE);
-        q.setMaxFeatures(10);
+        q.setMaxFeatures(60);
         q.setStartIndex(1);
 //        SimpleFeatureCollection fc = source.getFeatures(q);
 
@@ -258,8 +258,9 @@ public class MarkLogicTest {
                  store.getFeatureReader(q, Transaction.AUTO_COMMIT)) {
           int count = 0;
           while (reader.hasNext()) {
+        	System.out.println("reading feature...");
             SimpleFeature feature = reader.next();
-            System.out.println("  " + feature.getID() + " " + feature.getAttribute("OBJECTID"));
+            System.out.println("Feature ID: " + feature.getID());
             count++;
           }
           System.out.println("close feature reader");
@@ -267,7 +268,7 @@ public class MarkLogicTest {
         }
 
         // example3 end
-        System.out.println("\testSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
+        System.out.println("\ntestSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
 
 	@Test

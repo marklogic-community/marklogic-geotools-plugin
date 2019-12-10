@@ -78,11 +78,18 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 
 	@Override
 	public boolean hasNext() throws IOException {
-		LOGGER.log(Level.INFO, () -> "hasNext(): entered; currentPage: " + currentPage);
+		LOGGER.log(Level.INFO, () -> "hasNext(): entered; currentPage: " + currentPage + "; featuresRead: " + featuresRead + "; maxFeatures: " + maxFeatures );
 		if (currentPage == null) {
 			readNextPage();
+			return currentPage.hasNext();
 		}
-		return currentPage.hasNext() && featuresRead <= maxFeatures;
+		else if (featuresRead <= maxFeatures) {
+			if (!currentPage.hasNext()) {
+				readNextPage();
+			}
+			return currentPage.hasNext();
+		} else
+			return false;
 		/*
 		LOGGER.log(Level.INFO, () -> "hasNext(): entered");
 		if (next != null && featuresRead <= maxFeatures) {
@@ -115,6 +122,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 			
 			StringReader reader = new StringReader(currentResponse.toString());
 			FeatureJSON fj = new FeatureJSON();
+			fj.setFeatureType(getFeatureType());
 			currentFeatureCollection = fj.readFeatureCollection(reader);
 			currentPage = currentFeatureCollection.features();
 			index += pageLength;
