@@ -12,6 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.DigestAuthContext;
@@ -22,6 +24,7 @@ import com.marklogic.client.query.StructuredQueryDefinition;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Properties;
 
 import javax.ws.rs.client.Client;
@@ -42,14 +45,21 @@ import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
+import org.geotools.data.jdbc.FilterToSQL;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
+import org.geotools.filter.text.cql2.CQL;
 import org.geotools.geojson.feature.FeatureJSON;
+import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.Envelope2D;
+import org.geotools.geometry.GeometryFactoryFinder;
 import org.geotools.referencing.CRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.geotools.util.factory.Hints;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.simple.JSONObject;
 import org.junit.Test;
@@ -59,15 +69,17 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.spatial.Intersects;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class MarkLogicTest {
 
 	protected DatabaseClient client;
 	protected FilterFactory2 filterFactory;
-	protected FilterToMarkLogic filterToMarklogic;
 	protected Invocation.Builder invocationBuilder;
-
+	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
+	
 	public MarkLogicTest() throws IOException {
         // create client
         Properties p = loadProperties();
@@ -80,7 +92,6 @@ public class MarkLogicTest {
         client = DatabaseClientFactory.newClient(hostname, port, database, auth);
 
         filterFactory = CommonFactoryFinder.getFilterFactory2();
-        filterToMarklogic = new FilterToMarkLogic(client);
         
         
 		Client client = ClientBuilder.newClient();
@@ -271,6 +282,29 @@ public class MarkLogicTest {
         System.out.println("\ntestSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
 
+    @Test
+    public void testFilterToSQL() {
+    	System.out.println("testFilterToSQL start\n");
+    	long startTime = System.currentTimeMillis();
+    	
+    	try {
+    		Filter f = CQL.toFilter("attName >= 5");
+    		//Filter geo = 
+    		StringWriter writer = new StringWriter();
+    		FilterToSQL f2s = new FilterToSQL(writer);
+    		//String sql = f2s.encodeToString(f);l
+    		f.accept(f2s, null);
+    		System.out.println(writer.getBuffer());
+    		
+    		//f.accept(f2s, null);
+    		    	}
+    	catch(Exception ex) {
+    		ex.printStackTrace();
+    	}
+    	System.out.println("\ntestFilterToSQL elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+    	
+    }
+    
 	@Test
 	public void testIntersects() {
 		System.out.println("testIntersects start\n");
@@ -283,17 +317,13 @@ public class MarkLogicTest {
 		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"), // this string doesn't actually matter
 				//filterFactory.literal(new GeometryFactory().createPolygon(coordinates)));
 				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
-		StructuredQueryDefinition query = (StructuredQueryDefinition) intersects.accept(filterToMarklogic, null);
-		
-		JSONObject payload = filterToMarklogic.generatePayload();
-		System.out.println(payload.toString());
-		
-		
-		// hit the service
-		Response response = invocationBuilder.post(Entity.entity(payload.toJSONString(), MediaType.APPLICATION_JSON));
-		String result = response.readEntity(String.class);
-		
-		System.out.println(result);
+
+		StringWriter w = new StringWriter();
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
+		Object o = intersects.accept(filterToMarklogic, null);
+
+		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
+		//properly
 		
 
 /*		QueryManager qm = client.newQueryManager();
@@ -305,6 +335,38 @@ public class MarkLogicTest {
 */		// testIntersects end
 		System.out.println("\ntestIntersects elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
+	
+	@Test
+	public void testBBOX() {
+		System.out.println("testBBOX start\n");
+		long startTime = System.currentTimeMillis();
+
+		CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
+		
+		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
+				filterFactory.literal(new Envelope2D(
+						new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
+						new DirectPosition2D(DefaultGeographicCRS.WGS84,10.0, 20.0)
+						)));
+		StringWriter w = new StringWriter();
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
+		ObjectNode queryNode = nodeFactory.objectNode();
+		Object o = bbox.accept(filterToMarklogic, queryNode);
+
+		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
+		//properly
+		
+
+/*		QueryManager qm = client.newQueryManager();
+		SearchHandle results = new SearchHandle();
+		qm.search(query, results);
+		long totalResults = results.getTotalResults();
+    System.out.println(totalResults);
+		assertTrue(totalResults > 0);
+*/		// testIntersects end
+		System.out.println("\testBBOX elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+	}
+	
 /*
     @Test
     public void example4() throws Exception {
