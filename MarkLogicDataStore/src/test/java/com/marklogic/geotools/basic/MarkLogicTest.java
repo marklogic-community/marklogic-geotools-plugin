@@ -372,6 +372,36 @@ public class MarkLogicTest {
 		System.out.println("\testBBOX elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
 	
+	@Test
+	public void testPoint() {
+		System.out.println("testPoint start\n");
+		long startTime = System.currentTimeMillis();
+
+		CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
+		
+		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"),
+				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
+		StringWriter w = new StringWriter();
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
+		ObjectNode queryNode = nodeFactory.objectNode();
+		Object o = intersects.accept(filterToMarklogic, queryNode);
+		
+		System.out.println("Output of SQL Portion:" + w.toString());
+		System.out.println("Esri query parameters: " + queryNode.toString());
+		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
+		//properly
+		
+
+/*		QueryManager qm = client.newQueryManager();
+		SearchHandle results = new SearchHandle();
+		qm.search(query, results);
+		long totalResults = results.getTotalResults();
+    System.out.println(totalResults);
+		assertTrue(totalResults > 0);
+*/		// testIntersects end
+		System.out.println("\testPoint elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+	}
+	
 /*
     @Test
     public void example4() throws Exception {
