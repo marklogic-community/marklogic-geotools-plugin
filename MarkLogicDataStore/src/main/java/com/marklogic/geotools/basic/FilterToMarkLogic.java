@@ -109,6 +109,7 @@ public class FilterToMarkLogic extends FilterToSQL {
 	    	case POLYGON:
 	    	case MULTIPOLYGON:
 	    		esriGeometry = geometryToGeoJson(geo);
+	    		break;
 	    	default:
 	    		throw new RuntimeException(
 	                    "Unsupported Geometry Type: " + geomType.toString());
