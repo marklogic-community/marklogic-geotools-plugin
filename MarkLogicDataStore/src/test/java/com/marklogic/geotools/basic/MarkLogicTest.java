@@ -320,8 +320,11 @@ public class MarkLogicTest {
 
 		StringWriter w = new StringWriter();
 		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
-		Object o = intersects.accept(filterToMarklogic, null);
+		ObjectNode queryNode = nodeFactory.objectNode();
+		Object o = intersects.accept(filterToMarklogic, queryNode);
 
+		System.out.println("Output of SQL Portion:" + w.toString());
+		System.out.println("Esri query parameters: " + queryNode.toString());
 		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
 		//properly
 		
@@ -352,7 +355,9 @@ public class MarkLogicTest {
 		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
 		ObjectNode queryNode = nodeFactory.objectNode();
 		Object o = bbox.accept(filterToMarklogic, queryNode);
-
+		
+		System.out.println("Output of SQL Portion:" + w.toString());
+		System.out.println("Esri query parameters: " + queryNode.toString());
 		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
 		//properly
 		
