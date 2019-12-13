@@ -2,22 +2,30 @@ package com.marklogic.geotools.basic;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentState;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.util.logging.Logging;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKTReader;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeType;
+import org.opengis.feature.type.GeometryType;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.sort.SortBy;
 import org.opengis.filter.sort.SortOrder;
@@ -46,11 +54,15 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private JsonNode currentResponse;
     private FeatureCollection<?, ?> currentFeatureCollection;
     private FeatureIterator<?> currentPage = null;
+    private SimpleFeatureBuilder featureBuilder;
+    private String idField;
+    private String geometryColumn;
+    private WKTReader wktReader = new WKTReader();
 
 	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
     
     
-    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId) throws IOException {
+    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn) throws IOException {
         this.state = contentState;
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.toString());
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.getSortBy()[0].toString());
@@ -59,6 +71,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	    this.layerId = layerId;
 	    this.sqlQuery = "1=1"; //translate the Query.getFilter() above into sql
 	    this.query = query;
+	    this.idField = idField;
+	    this.geometryColumn = geometryColumn;
 	    
 	    if (query.isMaxFeaturesUnlimited()) {
 	    	this.maxFeatures = Integer.MAX_VALUE;
@@ -73,8 +87,9 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	    
         MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
         geoQueryServices = ml.getGeoQueryServiceManager(); // this may throw an IOException if it could not connect
+        featureBuilder = new SimpleFeatureBuilder(state.getFeatureType());
     }
-    
+  
     private void generateFilterRequestParams(ObjectNode queryProperty) {
     	
     	queryProperty.set("where", nodeFactory.textNode("1=1"));
@@ -174,6 +189,49 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     */
 	}
 
+	
+	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
+		JsonNode properties = node.get("properties");
+		Iterator<String> fieldNames = properties.fieldNames();
+		SimpleFeatureType featureType = getFeatureType();
+		String id = null;
+		
+		id = node.get("id").asText();
+		//featureBuilder.set(idField, id);
+		
+		while(fieldNames.hasNext()) {
+			String fieldName = fieldNames.next();
+			AttributeType attrType = featureType.getType(fieldName);
+			if (attrType instanceof GeometryType) {
+				Geometry geo = wktReader.read(properties.get(fieldName).asText());
+				featureBuilder.set(fieldName, geo);
+			}
+			else if (fieldName.equals(idField)) {
+				JsonNode data = properties.get(fieldName);
+				id = data.asText();
+				featureBuilder.set(fieldName, id);
+			} else {
+				featureBuilder.set(fieldName, properties.get(fieldName).asText());
+			}
+		}
+		return featureBuilder.buildFeature(id);
+	}
+	private FeatureCollection parseCurrentResponse() {
+		DefaultFeatureCollection featureCollection = new DefaultFeatureCollection();
+		
+		ArrayNode features = (ArrayNode)currentResponse.get("features");
+		Iterator<JsonNode> iter = features.elements();
+		while (iter.hasNext()) {
+			try {
+				featureCollection.add(parseJsonFeature(iter.next()));
+			}
+			catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		return featureCollection;
+	}
+	
 	private void readNextPage() throws IOException {
 		LOGGER.log(Level.INFO, () -> "readNextPage(): serviceName: " + serviceName + "\n"
 				+ "layerId: " + layerId + "\n"
@@ -189,10 +247,13 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 			
 			currentResponse = geoQueryServices.getFeatures(readFeatureRequestParams);
 			
+			currentFeatureCollection = parseCurrentResponse();
+			/*
 			StringReader reader = new StringReader(currentResponse.toString());
 			FeatureJSON fj = new FeatureJSON();
 			fj.setFeatureType(getFeatureType());
 			currentFeatureCollection = fj.readFeatureCollection(reader);
+			*/
 			currentPage = currentFeatureCollection.features();
 			index += pageLength;
 		}

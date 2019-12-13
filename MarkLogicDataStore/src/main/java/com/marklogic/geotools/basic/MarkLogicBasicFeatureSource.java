@@ -48,6 +48,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private JsonNode dbMetadata;
 	private String serviceName;
 	private int layerId;
+	private String idField;
+	private String geometryColumn;
 	private AttributeTypeBuilder attributeBuilder;
 	
 	private GeoQueryServiceManager geoQueryServices = getDataStore().getGeoQueryServiceManager();
@@ -115,7 +117,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
-		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId);
+		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId, idField, geometryColumn);
 	}
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
@@ -150,16 +152,33 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		JsonNode metadata = dbMetadata.get("metadata");
 		JsonNode schema = metadata.get("fields");
 		
+		idField = metadata.get("idField").asText();
+		JsonNode geometryColumnNode = metadata.get("geometrySource");
+		if (geometryColumnNode == null) {
+			JsonNode geometryNode = metadata.get("geometry");
+			if (geometryNode != null) {
+				JsonNode geometryColumnSourceNode = geometryNode.get("source");
+				if (geometryColumnSourceNode != null) {
+					geometryColumnNode = geometryColumnSourceNode.get("column");
+				}
+			}
+		}
+		if (geometryColumnNode != null) {
+			geometryColumn = geometryColumnNode.asText();
+		}
+		
 		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
-		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor("GEOMETRY_WKT", geoBinding);
+		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
 		builder.add(geoAttrDesc);
 		
 		for (JsonNode node : schema) {
 			String name = node.get("name").asText();
-			Class<?> binding = toClass(node);
-
-			AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
-			builder.add(attrDesc);
+			if (builder.get(name) == null) {
+				Class<?> binding = toClass(node);
+			
+				AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
+				builder.add(attrDesc);
+			}
 		}
 		// build the type (it is immutable and cannot be modified)
 		return builder.buildFeatureType();
