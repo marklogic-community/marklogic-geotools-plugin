@@ -144,14 +144,14 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
 //		LOGGER.info("Setting feature type builder name to " + entry.getName());
 		builder.setName(entry.getName());
-		builder.setSRS( "EPSG:4326" );
+		builder.setCRS( DefaultGeographicCRS.WGS84 );
 		builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
 		JsonNode metadata = dbMetadata.get("metadata");
 		JsonNode schema = metadata.get("fields");
 		
 		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
-		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor("geometry", geoBinding);
+		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor("GEOMETRY_WKT", geoBinding);
 		builder.add(geoAttrDesc);
 		
 		for (JsonNode node : schema) {
