@@ -233,7 +233,9 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	
 	@Override
 	public void close() throws IOException {
-		currentPage.close();
+  		if (currentPage != null) {
+			currentPage.close();
+		}
 	}
 
 }
