@@ -129,7 +129,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	
     	//sort
     	SortBy[] sortSpecs = query.getSortBy();
-    	if (sortSpecs.length > 0 ) {
+    	if (sortSpecs != null && sortSpecs.length > 0 ) {
     		if (sortSpecs.length == 1 && sortSpecs[0].getPropertyName() == null) {
     			//do nothing
     		}
