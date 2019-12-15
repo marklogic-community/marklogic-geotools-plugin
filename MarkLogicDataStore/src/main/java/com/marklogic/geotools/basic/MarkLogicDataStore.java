@@ -8,21 +8,27 @@ import java.util.logging.Level;
 
 import com.marklogic.client.query.*;
 import org.geotools.data.Query;
+import org.geotools.data.QueryCapabilities;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.geotools.filter.FilterCapabilities;
 import org.opengis.feature.type.Name;
+import org.opengis.filter.sort.SortBy;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.StringHandle;
 
+
 public class MarkLogicDataStore extends ContentDataStore {
 
 	DatabaseClient client;
 	GeoQueryServiceManager geoQueryServices;
 
+	private QueryCapabilities queryCapabilities;
+	private FilterCapabilities filterCapabilities;
 
 	/**
 	 *
@@ -51,11 +57,57 @@ public class MarkLogicDataStore extends ContentDataStore {
 		String database = (String) MarkLogicDataStoreFactory.ML_DATABASE_PARAM.lookUp(map);
 		String namespace = (String) MarkLogicDataStoreFactory.NAMESPACE_PARAM.lookUp(map);
 
+		this.queryCapabilities = buildQueryCapabilities();
+		this.filterCapabilities = buildFilterCapabilities();
+		
 		setupClient(host,port,new DatabaseClientFactory.DigestAuthContext(username,password), database);
 		setNamespaceURI(namespace);
 		setupGeoQueryServices();
 	}
 
+	public QueryCapabilities buildQueryCapabilities() {
+		return new QueryCapabilities() {
+			public boolean isJoiningSupported() {return false;}
+			public boolean isOffsetSupported() {return true;}
+			public boolean isReliableFIDSupported() {return true;}
+			public boolean isUseProvidedFIDSupported() {return false;}
+			public boolean isVersionSupported() {return false;}
+			public boolean supportsSorting(SortBy[] sortAttributes) {return true;}
+		};
+	}
+	
+	public FilterCapabilities buildFilterCapabilities() {
+		FilterCapabilities capabilities = new FilterCapabilities();
+		capabilities.addAll(FilterCapabilities.LOGICAL_OPENGIS);
+		capabilities.addAll(FilterCapabilities.SIMPLE_COMPARISONS_OPENGIS);
+		capabilities.addType(FilterCapabilities.FID);
+		capabilities.addType(FilterCapabilities.LIKE);
+		capabilities.addType(FilterCapabilities.NONE);
+		capabilities.addType(FilterCapabilities.NULL_CHECK);
+		capabilities.addType(FilterCapabilities.SIMPLE_ARITHMETIC);
+		capabilities.addType(FilterCapabilities.SPATIAL_BBOX);
+		capabilities.addType(FilterCapabilities.SPATIAL_CONTAINS);
+		capabilities.addType(FilterCapabilities.SPATIAL_DISJOINT);
+		capabilities.addType(FilterCapabilities.SPATIAL_INTERSECT);
+		capabilities.addType(FilterCapabilities.SPATIAL_OVERLAPS);
+		capabilities.addType(FilterCapabilities.SPATIAL_WITHIN);
+		return capabilities;
+	}
+	
+	public QueryCapabilities getQueryCapabilities() {
+		if (queryCapabilities == null) {
+			queryCapabilities = buildQueryCapabilities();
+		}
+		return queryCapabilities;
+	}
+	
+	public FilterCapabilities getFilterCapabilities() {
+		if (filterCapabilities == null) {
+			filterCapabilities = buildFilterCapabilities();
+		}
+		return filterCapabilities;
+	}
+	
 	private void setupClient(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database) {
 		if (Objects.nonNull(database)) {
 			client = DatabaseClientFactory.newClient(host, port, database, securityContext);
@@ -75,7 +127,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 	GeoQueryServiceManager getGeoQueryServiceManager() {
 		return geoQueryServices;
 	}
-	
+
 	/**
 	 * Update this to return a better description of our data, this is just a placeholder for now
 	 * @return

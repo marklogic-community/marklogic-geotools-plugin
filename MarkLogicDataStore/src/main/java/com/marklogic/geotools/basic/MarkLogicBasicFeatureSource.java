@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
+import org.geotools.data.QueryCapabilities;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.AttributeTypeBuilder;
@@ -28,6 +29,7 @@ import org.opengis.feature.type.AttributeType;
 import org.opengis.feature.type.GeometryType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
+import org.opengis.filter.sort.SortBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marklogic.client.DatabaseClient;
@@ -62,6 +64,43 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		retrieveDBMetadata(entry, query);
 	}
 	
+	@Override 
+	public QueryCapabilities buildQueryCapabilities() {
+		return new QueryCapabilities() {
+			public boolean isJoiningSupported() {return false;}
+			public boolean isOffsetSupported() {return true;}
+			public boolean isReliableFIDSupported() {return true;}
+			public boolean isUseProvidedFIDSupported() {return false;}
+			public boolean isVersionSupported() {return false;}
+			public boolean supportsSorting(SortBy[] sortAttributes) {return true;}
+		};
+	}
+	
+	@Override
+    protected boolean canOffset() {
+        return true;
+    }
+
+    @Override
+    protected boolean canLimit() {
+        return true;
+    }
+
+    @Override
+    protected boolean canRetype() {
+        return true;
+    }
+
+    @Override
+    protected boolean canSort() {
+        return true;
+    }
+
+    @Override
+    protected boolean canFilter() {
+        return true;
+    }
+    
 	protected void retrieveDBMetadata(ContentEntry entry, Query query) {
 		
 		try {
