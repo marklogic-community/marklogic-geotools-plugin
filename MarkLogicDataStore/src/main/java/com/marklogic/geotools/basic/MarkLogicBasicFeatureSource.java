@@ -161,7 +161,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
 		AttributeDescriptor descriptor;
-		attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
+		//attributeBuilder.setCRS(DefaultGeographicCRS.WGS84);
 		attributeBuilder.setBinding(binding);
 		attributeBuilder.setNamespaceURI(getDataStore().getNamespaceURI());
 		Name nameImpl = new NameImpl(getDataStore().getNamespaceURI(), name);
