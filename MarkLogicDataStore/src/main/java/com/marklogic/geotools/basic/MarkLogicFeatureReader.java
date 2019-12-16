@@ -11,7 +11,9 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.geotools.data.FeatureReader;
@@ -215,6 +217,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 
 	
 	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
+		System.out.println("parsing feature...");
 		JsonNode properties = node.get("properties");
 		Iterator<String> fieldNames = properties.fieldNames();
 		SimpleFeatureType featureType = getFeatureType();
@@ -224,18 +227,33 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		//featureBuilder.set(idField, id);
 		
 		while(fieldNames.hasNext()) {
-			String fieldName = fieldNames.next();
-			AttributeType attrType = featureType.getType(fieldName);
-			if (attrType instanceof GeometryType) {
-				Geometry geo = wktReader.read(properties.get(fieldName).asText());
-				featureBuilder.set(fieldName, geo);
+			try {
+				String fieldName = fieldNames.next();
+				AttributeType attrType = featureType.getType(fieldName);
+				if (attrType instanceof GeometryType) {
+					Geometry geo = wktReader.read(properties.get(fieldName).asText());
+					featureBuilder.set(fieldName, geo);
+				}
+				else if (fieldName.equals(idField)) {
+					JsonNode data = properties.get(fieldName);
+					id = data.asText();
+					featureBuilder.set(fieldName, id);
+				} else {
+					JsonNode data = properties.get(fieldName);
+					if (data instanceof NullNode) {
+						featureBuilder.set(fieldName, null);
+						}
+					else if (data instanceof BooleanNode) {
+						featureBuilder.set(fieldName, new Boolean(data.asText()));
+					}
+					else
+						featureBuilder.set(fieldName, data.asText());
+				}
 			}
-			else if (fieldName.equals(idField)) {
-				JsonNode data = properties.get(fieldName);
-				id = data.asText();
-				featureBuilder.set(fieldName, id);
-			} else {
-				featureBuilder.set(fieldName, properties.get(fieldName).asText());
+			catch (Exception ex) {
+				System.out.println("MarkLogicFeatureReader:  caught exception:");
+				ex.printStackTrace();
+				throw ex;
 			}
 		}
 		return featureBuilder.buildFeature(id);
