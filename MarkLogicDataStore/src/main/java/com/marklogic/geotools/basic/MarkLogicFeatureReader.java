@@ -2,7 +2,9 @@ package com.marklogic.geotools.basic;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,11 +27,14 @@ import org.locationtech.jts.io.WKTReader;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeType;
+import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.feature.type.GeometryType;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.sort.SortBy;
 import org.opengis.filter.sort.SortOrder;
 import org.geotools.geojson.feature.FeatureJSON;
+import org.opengis.feature.type.Name;
+import org.opengis.feature.type.PropertyDescriptor;
 
 public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, SimpleFeature> {
 
@@ -153,11 +158,30 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		return state.getFeatureType();
 	}
 
+	private void logFeature(SimpleFeature feature) {
+		System.out.println("FEATURE LOG:");
+		System.out.println("Feature ID: " + feature.getID());
+		SimpleFeatureType featureType = feature.getType();
+		GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
+		
+		Collection<PropertyDescriptor> propertyDescriptors = featureType.getDescriptors();
+		for (PropertyDescriptor propDesc : propertyDescriptors) {
+			Name attrName = propDesc.getName();
+			Object attr = feature.getAttribute(attrName);
+			
+			if (attr != null)
+				System.out.println(attrName.toString() + ": " + attr.toString());
+			else
+				System.out.println("Could not find property for property descriptor: " + propDesc.toString());
+		}
+		
+	};
 	
 	@Override
 	public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
 		SimpleFeature feature = readFeature();
 		LOGGER.log(Level.INFO, () -> "next(): successfully read feature, about to return it");
+		logFeature(feature);
 		return feature;
 	}
 
