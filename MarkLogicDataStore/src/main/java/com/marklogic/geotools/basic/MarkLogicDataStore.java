@@ -12,7 +12,11 @@ import org.geotools.data.QueryCapabilities;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.NameImpl;
+import org.geotools.feature.type.FeatureTypeFactoryImpl;
 import org.geotools.filter.FilterCapabilities;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.sort.SortBy;
 
@@ -60,6 +64,11 @@ public class MarkLogicDataStore extends ContentDataStore {
 		this.queryCapabilities = buildQueryCapabilities();
 		this.filterCapabilities = buildFilterCapabilities();
 		
+		setFilterFactory(CommonFactoryFinder.getFilterFactory(null));
+        setGeometryFactory(new GeometryFactory());
+        setFeatureTypeFactory(new FeatureTypeFactoryImpl());
+        setFeatureFactory(CommonFactoryFinder.getFeatureFactory(null));
+		
 		setupClient(host,port,new DatabaseClientFactory.DigestAuthContext(username,password), database);
 		setNamespaceURI(namespace);
 		setupGeoQueryServices();
@@ -67,7 +76,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 
 	public QueryCapabilities buildQueryCapabilities() {
 		return new QueryCapabilities() {
-			public boolean isJoiningSupported() {return false;}
+			public boolean isJoiningSupported() {return true;}
 			public boolean isOffsetSupported() {return true;}
 			public boolean isReliableFIDSupported() {return true;}
 			public boolean isUseProvidedFIDSupported() {return false;}
@@ -146,10 +155,6 @@ public class MarkLogicDataStore extends ContentDataStore {
 			List<Name> nameList;
 			nameList = geoQueryServices.getLayerNames();
 			
-			ArrayList<String> uris = new ArrayList<String>();
-			for (Name n : nameList) {
-				uris.add(n.getURI());
-			}
 			LOGGER.info("**************************************************************************");
 			LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
 			LOGGER.info("**************************************************************************");
@@ -162,6 +167,16 @@ public class MarkLogicDataStore extends ContentDataStore {
 			return new ArrayList<Name>();
 		}
     }
+	
+	@Override
+	public List<Name> getNames() throws IOException {
+	    String[] typeNames = getTypeNames();
+	    List<Name> names = new ArrayList<Name>(typeNames.length);
+	    for (String typeName : typeNames) {
+	        names.add(new NameImpl(namespaceURI, typeName));
+	    }
+	    return names;
+	}
 	
 	@Override
   protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {

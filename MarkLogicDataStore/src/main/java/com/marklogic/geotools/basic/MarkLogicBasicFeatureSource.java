@@ -1,7 +1,9 @@
 package com.marklogic.geotools.basic;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,9 +20,13 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.MultiPoint;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+import org.geotools.util.factory.Hints;
+import org.geotools.util.factory.Hints.Key;
 import org.geotools.util.logging.Logging;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -62,6 +68,11 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		
 		attributeBuilder = new AttributeTypeBuilder(new FeatureTypeFactoryImpl());
 		retrieveDBMetadata(entry, query);
+		HashSet<Key> hints = new HashSet<Hints.Key>();
+		hints.add(Hints.JTS_GEOMETRY_FACTORY);
+        hints.add(Hints.JTS_COORDINATE_SEQUENCE_FACTORY);
+        hints.add(Hints.GEOMETRY_DISTANCE);
+        this.hints = Collections.unmodifiableSet(hints);
 	}
 	
 	@Override 
@@ -227,13 +238,13 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		Class binding = String.class;
 
 		if ("Point".contentEquals(geoType)) {
-			binding = Point.class;
+			binding = MultiPoint.class;
 		}
 		else if ("Linestring".contentEquals(geoType)) {
-			binding = LineString.class;
+			binding = MultiLineString.class;
 		}
 		else if ("Polygon".contentEquals(geoType)) {
-			binding = Polygon.class;
+			binding = MultiPolygon.class;
 		}
 		else if ("MultiPolygon".contentEquals(geoType)) {
 			binding = MultiPolygon.class;
@@ -248,13 +259,13 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		if ("geometry".contentEquals(type)) {
 			String geoType = node.get("geometryType").asText();
 			if ("point".contentEquals(geoType)) {
-				binding = Point.class;
+				binding = MultiPoint.class;
 			}
 			else if ("linestring".contentEquals(geoType)) {
-				binding = LineString.class;
+				binding = MultiLineString.class;
 			}
 			else if ("polygon".contentEquals(geoType)) {
-				binding = Polygon.class;
+				binding = MultiPolygon.class;
 			}
 			else if ("MultiPolygon".contentEquals(geoType)) {
 				binding = MultiPolygon.class;

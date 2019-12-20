@@ -23,9 +23,10 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.util.Converters;
 import org.geotools.util.logging.Logging;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.WKTReader;
+import org.geotools.geometry.jts.WKTReader2;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeType;
@@ -64,7 +65,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private SimpleFeatureBuilder featureBuilder;
     private String idField;
     private String geometryColumn;
-    private WKTReader wktReader = new WKTReader();
+    private WKTReader2 wktReader = new WKTReader2();
 
 	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
     
@@ -232,7 +233,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 				AttributeType attrType = featureType.getType(fieldName);
 				if (attrType instanceof GeometryType) {
 					Geometry geo = wktReader.read(properties.get(fieldName).asText());
-					featureBuilder.set(fieldName, geo);
+					Object value = Converters.convert(geo, attrType.getBinding());
+					featureBuilder.set(fieldName, value);
 				}
 				else if (fieldName.equals(idField)) {
 					JsonNode data = properties.get(fieldName);
