@@ -100,6 +100,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
   
     private void generateFilterRequestParams(ObjectNode queryProperty) {
     	
+    	System.out.println("in generateFilterRequestParams:");
+    	System.out.println(query.getFilter().toString());
     	queryProperty.set("where", nodeFactory.textNode("1=1"));
     };
     
