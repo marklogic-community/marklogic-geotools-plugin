@@ -2,6 +2,7 @@ package com.marklogic.geotools.basic;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.opengis.filter.sort.SortOrder;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
+import org.opengis.filter.Filter;
 
 public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, SimpleFeature> {
 
@@ -102,8 +104,15 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	
     	LOGGER.log(Level.INFO, () -> "in generateFilterRequestParams(); Query:\n" + query.toString());
     	LOGGER.log(Level.INFO, () -> "in generateFilterRequestParams(); Filter:\n" + query.getFilter().toString());
-
-    	queryProperty.set("where", nodeFactory.textNode("1=1"));
+    	StringWriter writer = new StringWriter();
+    	
+    	FilterToMarkLogic f2m = new FilterToMarkLogic(writer);
+    	Filter f = query.getFilter();
+        ObjectNode queryParams = nodeFactory.objectNode();
+    	String sql = (String)f.accept(f2m, queryParams);
+    	System.out.println(queryParams.toString());
+    	
+    	queryProperty.set("where", nodeFactory.textNode(sql));
     };
     
     private void generateReadFeatureRequestParams() {
