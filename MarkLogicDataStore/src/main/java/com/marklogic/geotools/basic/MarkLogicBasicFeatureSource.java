@@ -218,8 +218,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		}
 		
 		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
-		AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
-		builder.add(geoAttrDesc);
+		//AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
+		builder.add(geometryColumn, geoBinding);
 		
 		for (JsonNode node : schema) {
 			String name = node.get("name").asText();
@@ -227,15 +227,16 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 				Class<?> binding = toClass(node);
 			
 				AttributeDescriptor attrDesc = buildAttributeDescriptor(name, binding);
-				builder.add(attrDesc);
+				//builder.add(attrDesc);
+				builder.add(name, binding);
 			}
 		}
 		// build the type (it is immutable and cannot be modified)
 		return builder.buildFeatureType();
 	}
 
-	protected Class geometryToClass(String geoType) {
-		Class binding = String.class;
+	protected Class<?> geometryToClass(String geoType) {
+		Class<?> binding = String.class;
 
 		if ("Point".contentEquals(geoType)) {
 			binding = MultiPoint.class;
@@ -252,8 +253,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		return binding;
 	}
 	
-	protected Class toClass(JsonNode node) {
-		Class binding = String.class;
+	protected Class<?> toClass(JsonNode node) {
+		Class<?> binding = String.class;
 		String type = node.get("type").asText();
 
 		if ("geometry".contentEquals(type)) {
