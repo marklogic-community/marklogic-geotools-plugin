@@ -246,7 +246,13 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 						featureBuilder.set(fieldName, null);
 						}
 					else if (data instanceof BooleanNode) {
-						featureBuilder.set(fieldName, new Boolean(data.asText()));
+						String text = data.asText();
+						if (text.equalsIgnoreCase("true")) {
+							featureBuilder.set(fieldName, 1);
+						}
+						else
+							featureBuilder.set(fieldName, 0);
+						//featureBuilder.set(fieldName, new Boolean(data.asText()));
 					}
 					else
 						featureBuilder.set(fieldName, data.asText());
