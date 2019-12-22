@@ -69,6 +69,7 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.filter.sort.SortBy;
 import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.spatial.Intersects;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -251,6 +252,13 @@ public class MarkLogicTest {
     
     @Test
     public void testSimpleFeatureReader() throws IOException {
+        Query q = new Query("TEST_JOIN_0", Filter.INCLUDE);
+        q.setMaxFeatures(60);
+        q.setStartIndex(1);
+    	_testSimpleFeatureReader(q);
+    }
+    
+    private void _testSimpleFeatureReader(Query q) throws IOException {
         System.out.println("testSimpleFeatureReader start\n");
         long startTime = System.currentTimeMillis();
         Properties p = loadProperties();
@@ -258,9 +266,7 @@ public class MarkLogicTest {
         DataStore store = DataStoreFinder.getDataStore(p);
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
         SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
-        Query q = new Query("TEST_JOIN_0", Filter.INCLUDE);
-        q.setMaxFeatures(60);
-        q.setStartIndex(1);
+
 //        SimpleFeatureCollection fc = source.getFeatures(q);
 
         System.out.println("open feature reader");
@@ -282,6 +288,26 @@ public class MarkLogicTest {
         System.out.println("\ntestSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
 
+    @Test 
+    public void testFilterToSQLFeatureReader() {
+    	System.out.println("testFilterToSQLFeatureReader start\n");
+    	long startTime = System.currentTimeMillis();
+    	
+    	try {
+    		Filter f = CQL.toFilter("IS_CONCEALED >= 1 AND OBJECTID is null");
+    		System.out.println(f.toString());
+    		
+    		Query q = new Query("TEST_JOIN_0", f);
+    		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
+    		_testSimpleFeatureReader(q);
+    	}
+    	catch(Exception ex) {
+    		ex.printStackTrace();
+    	}
+    	
+    	System.out.println("\ntestFilterToSQLFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+    }
+    
     @Test
     public void testFilterToSQL() {
     	System.out.println("testFilterToSQL start\n");
@@ -370,6 +396,23 @@ public class MarkLogicTest {
 		assertTrue(totalResults > 0);
 */		// testIntersects end
 		System.out.println("\testBBOX elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+	}
+	
+	@Test
+	public void testBBOXWithFeatureReader() throws IOException {
+		System.out.println("testBBOX start\n");
+		long startTime = System.currentTimeMillis();
+		
+		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
+				filterFactory.literal(new Envelope2D(
+						new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
+						new DirectPosition2D(DefaultGeographicCRS.WGS84,10.0, 20.0)
+						)));
+		
+		Query q = new Query("TEST_JOIN_0", bbox);
+		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
+		_testSimpleFeatureReader(q);
+		System.out.println("\testBBOXWithFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
 	
 	@Test

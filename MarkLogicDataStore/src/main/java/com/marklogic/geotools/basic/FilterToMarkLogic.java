@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
@@ -154,7 +155,10 @@ public class FilterToMarkLogic extends FilterToSQL {
 		ObjectNode ext = nodeFactory.objectNode();
 		
     	if (geometry.getValue() instanceof Envelope) {
-    		esriExtGeometry = envelopeToEsri((Envelope)geometry.getValue());
+    		Envelope env = (Envelope)geometry.getValue();
+    		esriExtGeometry = envelopeToEsri(env);
+    		esriGeometry = envelopeToEsriPolygon(env);
+    		
     		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryEnvelope"));
     	}
     	else {
@@ -324,6 +328,19 @@ public class FilterToMarkLogic extends FilterToSQL {
     	node.set("rings", rings);
     	setSpatialReference(node, 4326);
     	return node;
+    }
+    
+    private ObjectNode envelopeToEsriPolygon(Envelope e) {
+    	Coordinate[] coordList = new Coordinate[5];
+    	coordList[0] = new Coordinate(e.getMinimum(0), e.getMinimum(1));
+    	coordList[1] = new Coordinate(e.getMaximum(0), e.getMinimum(1));
+    	coordList[2] = new Coordinate(e.getMaximum(0), e.getMaximum(1));
+    	coordList[3] = new Coordinate(e.getMinimum(0), e.getMaximum(1));
+    	coordList[4] = new Coordinate(e.getMinimum(0), e.getMinimum(1));
+    	
+    	Polygon p = geometryFactory.createPolygon(coordList);
+    	ObjectNode geoJson = geometryToGeoJson(p);
+    	return geoJson;
     }
     
     private ObjectNode multiPolygonToEsri(MultiPolygon mp) {

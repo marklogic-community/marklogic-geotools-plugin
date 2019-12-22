@@ -108,9 +108,10 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	
     	FilterToMarkLogic f2m = new FilterToMarkLogic(writer);
     	Filter f = query.getFilter();
-        ObjectNode queryParams = nodeFactory.objectNode();
-    	String sql = (String)f.accept(f2m, queryParams);
-    	System.out.println(queryParams.toString());
+        f.accept(f2m, queryProperty);
+        String sql = writer.toString();
+    	System.out.println(sql);
+    	System.out.println(queryProperty.toString());
     	
     	queryProperty.set("where", nodeFactory.textNode(sql));
     };
@@ -165,6 +166,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     			queryProperty.set("orderByFields", nodeFactory.textNode(sortByString));
     		}
     	}
+    	System.out.println("queryProperty:");
+    	System.out.println(queryProperty.toString());
     	readFeatureRequestParams.set("query", queryProperty);
     }
     
