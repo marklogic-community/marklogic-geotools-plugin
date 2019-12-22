@@ -311,6 +311,26 @@ public class MarkLogicTest {
     	System.out.println("\ntestFilterToSQLFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
     }
     
+    @Test 
+    public void testFilterToSQLLikeFeatureReader() {
+    	System.out.println("testFilterToSQLLikeFeatureReader start\n");
+    	long startTime = System.currentTimeMillis();
+    	
+    	try {
+    		Filter f = CQL.toFilter("ACTIVITY_TYPE LIKE '%AGRICULTURE%'");
+    		System.out.println(f.toString());
+    		
+    		Query q = new Query("TEST_JOIN_0", f);
+    		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
+    		_testSimpleFeatureReader(q);
+    	}
+    	catch(Exception ex) {
+    		ex.printStackTrace();
+    	}
+    	
+    	System.out.println("\ntestFilterToSQLLikeFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+    }
+    
     @Test
     public void testFilterToSQL() {
     	System.out.println("testFilterToSQL start\n");
