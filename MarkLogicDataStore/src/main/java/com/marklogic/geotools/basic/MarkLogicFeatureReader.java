@@ -106,12 +106,10 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	LOGGER.log(Level.INFO, () -> "in generateFilterRequestParams(); Filter:\n" + query.getFilter().toString());
     	StringWriter writer = new StringWriter();
     	
-    	FilterToMarkLogic f2m = new FilterToMarkLogic(writer);
+    	FilterToMarkLogic f2m = new FilterToMarkLogic(writer, queryProperty);
     	Filter f = query.getFilter();
-        f.accept(f2m, queryProperty);
+        f.accept(f2m, null);
         String sql = writer.toString();
-    	System.out.println(sql);
-    	System.out.println(queryProperty.toString());
     	
     	queryProperty.set("where", nodeFactory.textNode(sql));
     };
@@ -166,8 +164,6 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     			queryProperty.set("orderByFields", nodeFactory.textNode(sortByString));
     		}
     	}
-    	System.out.println("queryProperty:");
-    	System.out.println(queryProperty.toString());
     	readFeatureRequestParams.set("query", queryProperty);
     }
     
@@ -177,8 +173,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	}
 
 	private void logFeature(SimpleFeature feature) {
-		System.out.println("FEATURE LOG:");
-		System.out.println("Feature ID: " + feature.getID());
+		LOGGER.log(Level.INFO, () -> "FEATURE LOG:");
+		LOGGER.log(Level.INFO, () -> "Feature ID: " + feature.getID());
 		SimpleFeatureType featureType = feature.getType();
 		GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
 		
@@ -188,9 +184,9 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 			Object attr = feature.getAttribute(attrName);
 			
 			if (attr != null)
-				System.out.println(attrName.toString() + ": " + attr.toString());
+				LOGGER.log(Level.INFO, () -> attrName.toString() + ": " + attr.toString());
 			else
-				System.out.println("Could not find property for property descriptor: " + propDesc.toString());
+				LOGGER.log(Level.INFO, () -> "Could not find property for property descriptor: " + propDesc.toString());
 		}
 		
 	};
@@ -233,7 +229,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 
 	
 	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
-		System.out.println("parsing feature...");
+		LOGGER.log(Level.INFO, () -> "parsing feature...");
 		JsonNode properties = node.get("properties");
 		Iterator<String> fieldNames = properties.fieldNames();
 		SimpleFeatureType featureType = getFeatureType();
@@ -274,7 +270,6 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 				}
 			}
 			catch (Exception ex) {
-				System.out.println("MarkLogicFeatureReader:  caught exception:");
 				ex.printStackTrace();
 				throw ex;
 			}

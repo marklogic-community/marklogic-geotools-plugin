@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.ws.rs.client.Client;
@@ -67,6 +69,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.filter.And;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.sort.SortBy;
@@ -345,9 +348,10 @@ public class MarkLogicTest {
 				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
 
 		StringWriter w = new StringWriter();
-		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
+
 		ObjectNode queryNode = nodeFactory.objectNode();
-		Object o = intersects.accept(filterToMarklogic, queryNode);
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w, queryNode);
+		Object o = intersects.accept(filterToMarklogic, null);
 
 		System.out.println("Output of SQL Portion:" + w.toString());
 		System.out.println("Esri query parameters: " + queryNode.toString());
@@ -378,9 +382,9 @@ public class MarkLogicTest {
 						new DirectPosition2D(DefaultGeographicCRS.WGS84,10.0, 20.0)
 						)));
 		StringWriter w = new StringWriter();
-		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
 		ObjectNode queryNode = nodeFactory.objectNode();
-		Object o = bbox.accept(filterToMarklogic, queryNode);
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w, queryNode);
+		Object o = bbox.accept(filterToMarklogic, null);
 		
 		System.out.println("Output of SQL Portion:" + w.toString());
 		System.out.println("Esri query parameters: " + queryNode.toString());
@@ -396,6 +400,32 @@ public class MarkLogicTest {
 		assertTrue(totalResults > 0);
 */		// testIntersects end
 		System.out.println("\testBBOX elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
+	}
+	
+	@Test
+	public void testBBOXAndPropertyWithFeatureReader() throws Exception {
+		System.out.println("testBBOXAndPropertyWithFeatureReader start\n");
+		long startTime = System.currentTimeMillis();
+		
+		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
+			filterFactory.literal(new Envelope2D(
+					new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
+					new DirectPosition2D(DefaultGeographicCRS.WGS84,10.0, 20.0)
+					)));
+		Filter f = CQL.toFilter("OBJECTID is not null");
+		System.out.println(f.toString());
+		
+		List<Filter> filterList = new ArrayList<Filter>();
+		filterList.add(bbox);
+		filterList.add(f);
+		
+		And andFilter = filterFactory.and(filterList);
+		Query q = new Query("TEST_JOIN_0", andFilter);
+		
+		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
+		
+		_testSimpleFeatureReader(q);
+		System.out.println("\ntestBBOXAndPropertyWithFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
 	
 	@Test
@@ -425,9 +455,9 @@ public class MarkLogicTest {
 		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"),
 				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
 		StringWriter w = new StringWriter();
-		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w);
 		ObjectNode queryNode = nodeFactory.objectNode();
-		Object o = intersects.accept(filterToMarklogic, queryNode);
+		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w, queryNode);
+		Object o = intersects.accept(filterToMarklogic, null);
 		
 		System.out.println("Output of SQL Portion:" + w.toString());
 		System.out.println("Esri query parameters: " + queryNode.toString());

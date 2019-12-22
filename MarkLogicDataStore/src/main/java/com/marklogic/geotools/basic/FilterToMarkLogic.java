@@ -51,11 +51,13 @@ public class FilterToMarkLogic extends FilterToSQL {
 	protected GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
 	protected JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
 	protected GeometryJSON geometryJson = new GeometryJSON();
+	protected ObjectNode queryNode;
 	
 	protected FilterToMarkLogicSpatial spatialFilter = null;
 	
-	public FilterToMarkLogic(Writer writer) {
+	public FilterToMarkLogic(Writer writer, ObjectNode queryNode) {
 		super(writer);
+		this.queryNode = queryNode;
 	}
 	
 	/** Handles the common case of a PropertyName,Literal geometry binary spatial operator. */
@@ -66,181 +68,186 @@ public class FilterToMarkLogic extends FilterToSQL {
             boolean swapped,
             Object extraData) {
     	
-    	String spatialRel = "esriSpatialRelContains";
-    	
-    	ObjectNode esriGeometry = null;
-    	ObjectNode esriExtGeometry = null;
-    	ObjectNode queryNode = (ObjectNode)extraData;
-    	/*
-    	 * Sample of what queryNode might look like after this method, with a 
-    	 * polygon input.  
-    	 * The "where" part will be set at the end, after all the FilterToMarkLogic
-    	 * logic is done.  This method only sets the spatialRel, geometryType, geometry,
-    	 * and ext properties.  The "geometry" property should be the esri-formatted geometry
-    	 * in accordance with the FeatureServer Layer Query spec.  The "extension"."geometry"
-    	 * is a copy of the "geometry" property but with additional "type" and "coordinates" 
-    	 * properties to make it a GeoJSON object.
-    	 * 
-    {
-    	"query": {
-        "spatialRel": "esriSpatialRelIntersects",
-        "where": "1=1",
-        "geometryType": "esriGeometryPolygon",
-        "geometry": {
-            "rings": [
-                [
-                    [-97.06138, 32.837],
-                    [-97.06133, 32.836],
-                    [-97.06124, 32.834],
-                    [-97.06127, 32.832],
-                    [-97.06138, 32.837]
-                ],
-                [
-                    [-97.06326, 32.759],
-                    [-97.06298, 32.755],
-                    [-97.06153, 32.749],
-                    [-97.06326, 32.759]
-                ]
-            ],
-            "spatialReference": {
-                "wkid": 4326
-            }
-        },
-        "extension": {
-            "geometry": {
-                "rings": [
-                    [
-                        [-97.06138, 32.837],
-                        [-97.06133, 32.836],
-                        [-97.06124, 32.834],
-                        [-97.06127, 32.832],
-                        [-97.06138, 32.837]
-                    ],
-                    [
-                        [-97.06326, 32.759],
-                        [-97.06298, 32.755],
-                        [-97.06153, 32.749],
-                        [-97.06326, 32.759]
-                    ]
-                ],
-                "spatialReference": {
-                    "wkid": 4326
-                },
-                "type": "MultiPolygon",
-                "coordinates": [
-                    [
-                        [
-                            [-97.06138, 32.837],
-                            [-97.06133, 32.836],
-                            [-97.06124, 32.834],
-                            [-97.06127, 32.832],
-                            [-97.06138, 32.837]
-                        ]
-                    ],
-                    [
-                        [
-                            [-97.06326, 32.759],
-                            [-97.06153, 32.749],
-                            [-97.06298, 32.755],
-                            [-97.06326, 32.759]
-                        ]
-                    ]
-                ]
-            }
-        }
-    }
-}
-    	 */
-
-		ObjectNode ext = nodeFactory.objectNode();
-		
-    	if (geometry.getValue() instanceof Envelope) {
-    		Envelope env = (Envelope)geometry.getValue();
-    		esriExtGeometry = envelopeToEsri(env);
-    		esriGeometry = envelopeToEsriPolygon(env);
-    		
-    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryEnvelope"));
-    	}
-    	else {
-	    	Geometry geo = (Geometry)geometry.getValue();
+    	try {
+	    	String spatialRel = "esriSpatialRelContains";
 	    	
-	    	if (filter instanceof Contains) {
-	    		spatialRel = "esriSpatialRelContains";
-	    	}
-	    	else if (filter instanceof Intersects) {
-	    		spatialRel = "esriSpatialRelIntersects";
-	    	}
-	    	else if (filter instanceof Crosses) {
-	    		spatialRel = "esriSpatialRelCrosses";
-	    	}
-	    	else if (filter instanceof Overlaps) {
-	    		spatialRel = "esriSpatialRelOverlaps";
-	    	}
-	    	else if (filter instanceof Touches) {
-	    		spatialRel = "esriSpatialRelTouches";
-	    	}
-	    	else if (filter instanceof Within) {
-	    		spatialRel = "esriSpatialRelWithin";
+	    	ObjectNode esriGeometry = null;
+	    	ObjectNode esriExtGeometry = null;
+	    	/*
+	    	 * Sample of what queryNode might look like after this method, with a 
+	    	 * polygon input.  
+	    	 * The "where" part will be set at the end, after all the FilterToMarkLogic
+	    	 * logic is done.  This method only sets the spatialRel, geometryType, geometry,
+	    	 * and ext properties.  The "geometry" property should be the esri-formatted geometry
+	    	 * in accordance with the FeatureServer Layer Query spec.  The "extension"."geometry"
+	    	 * is a copy of the "geometry" property but with additional "type" and "coordinates" 
+	    	 * properties to make it a GeoJSON object.
+	    	 * 
+	    {
+	    	"query": {
+	        "spatialRel": "esriSpatialRelIntersects",
+	        "where": "1=1",
+	        "geometryType": "esriGeometryPolygon",
+	        "geometry": {
+	            "rings": [
+	                [
+	                    [-97.06138, 32.837],
+	                    [-97.06133, 32.836],
+	                    [-97.06124, 32.834],
+	                    [-97.06127, 32.832],
+	                    [-97.06138, 32.837]
+	                ],
+	                [
+	                    [-97.06326, 32.759],
+	                    [-97.06298, 32.755],
+	                    [-97.06153, 32.749],
+	                    [-97.06326, 32.759]
+	                ]
+	            ],
+	            "spatialReference": {
+	                "wkid": 4326
+	            }
+	        },
+	        "extension": {
+	            "geometry": {
+	                "rings": [
+	                    [
+	                        [-97.06138, 32.837],
+	                        [-97.06133, 32.836],
+	                        [-97.06124, 32.834],
+	                        [-97.06127, 32.832],
+	                        [-97.06138, 32.837]
+	                    ],
+	                    [
+	                        [-97.06326, 32.759],
+	                        [-97.06298, 32.755],
+	                        [-97.06153, 32.749],
+	                        [-97.06326, 32.759]
+	                    ]
+	                ],
+	                "spatialReference": {
+	                    "wkid": 4326
+	                },
+	                "type": "MultiPolygon",
+	                "coordinates": [
+	                    [
+	                        [
+	                            [-97.06138, 32.837],
+	                            [-97.06133, 32.836],
+	                            [-97.06124, 32.834],
+	                            [-97.06127, 32.832],
+	                            [-97.06138, 32.837]
+	                        ]
+	                    ],
+	                    [
+	                        [
+	                            [-97.06326, 32.759],
+	                            [-97.06153, 32.749],
+	                            [-97.06298, 32.755],
+	                            [-97.06326, 32.759]
+	                        ]
+	                    ]
+	                ]
+	            }
+	        }
+	    }
+	}
+	    	 */
+	
+			ObjectNode ext = nodeFactory.objectNode();
+			
+	    	if (geometry.getValue() instanceof Envelope) {
+	    		Envelope env = (Envelope)geometry.getValue();
+	    		esriExtGeometry = envelopeToEsri(env);
+	    		esriGeometry = envelopeToEsriPolygon(env);
+	    		
+	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryEnvelope"));
 	    	}
 	    	else {
-	    		throw new RuntimeException(
-	                    "Unsupported Geospatial Filter Type");
+		    	Geometry geo = (Geometry)geometry.getValue();
+		    	
+		    	if (filter instanceof Contains) {
+		    		spatialRel = "esriSpatialRelContains";
+		    	}
+		    	else if (filter instanceof Intersects) {
+		    		spatialRel = "esriSpatialRelIntersects";
+		    	}
+		    	else if (filter instanceof Crosses) {
+		    		spatialRel = "esriSpatialRelCrosses";
+		    	}
+		    	else if (filter instanceof Overlaps) {
+		    		spatialRel = "esriSpatialRelOverlaps";
+		    	}
+		    	else if (filter instanceof Touches) {
+		    		spatialRel = "esriSpatialRelTouches";
+		    	}
+		    	else if (filter instanceof Within) {
+		    		spatialRel = "esriSpatialRelWithin";
+		    	}
+		    	else {
+		    		throw new RuntimeException(
+		                    "Unsupported Geospatial Filter Type");
+		    	}
+		    	
+		    	queryNode.set("spatialRel", nodeFactory.textNode(spatialRel));
+		    	Geometries geomType = Geometries.get(geo);
+		    	switch(geomType) {
+		    	case POINT:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPoint"));
+		    		esriGeometry = pointToEsri((Point)geo);
+		    		break;
+		    	case MULTIPOINT:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryMultipoint"));
+		    		esriGeometry = multiPointToEsri((MultiPoint)geo);
+		    		break;
+		    	case LINESTRING:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolyline"));
+		    		esriGeometry = lineStringToEsri((LineString)geo);
+		    		break;
+		    	case MULTILINESTRING:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolyline"));
+		    		esriGeometry = multiLineStringtoEsri((MultiLineString)geo);
+		    		break;
+		    	case POLYGON:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolygon"));
+		    		esriGeometry = polygonToEsri((Polygon)geo);
+		    		break;
+		    	case MULTIPOLYGON:
+		    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolygon"));
+		    		esriGeometry = multiPolygonToEsri((MultiPolygon)geo);
+		    		break;
+		    	default:
+		    		throw new RuntimeException(
+		                    "Unsupported Geometry Type: " + geomType.toString());
+		    	}
+		    	esriExtGeometry = geometryToGeoJson(geo);
+	    		//also need to create the actual esri format, ugh
 	    	}
-	    	
-	    	queryNode.set("spatialRel", nodeFactory.textNode(spatialRel));
-	    	Geometries geomType = Geometries.get(geo);
-	    	switch(geomType) {
-	    	case POINT:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPoint"));
-	    		esriGeometry = pointToEsri((Point)geo);
-	    		break;
-	    	case MULTIPOINT:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryMultipoint"));
-	    		esriGeometry = multiPointToEsri((MultiPoint)geo);
-	    		break;
-	    	case LINESTRING:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolyline"));
-	    		esriGeometry = lineStringToEsri((LineString)geo);
-	    		break;
-	    	case MULTILINESTRING:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolyline"));
-	    		esriGeometry = multiLineStringtoEsri((MultiLineString)geo);
-	    		break;
-	    	case POLYGON:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolygon"));
-	    		esriGeometry = polygonToEsri((Polygon)geo);
-	    		break;
-	    	case MULTIPOLYGON:
-	    		queryNode.set("geometryType", nodeFactory.textNode("esriGeometryPolygon"));
-	    		esriGeometry = multiPolygonToEsri((MultiPolygon)geo);
-	    		break;
-	    	default:
-	    		throw new RuntimeException(
-	                    "Unsupported Geometry Type: " + geomType.toString());
+	    	try {
+	    		out.write("1=1");
 	    	}
-	    	esriExtGeometry = geometryToGeoJson(geo);
-    		//also need to create the actual esri format, ugh
-    	}
-    	try {
-    		out.write("1=1");
-    	}
-    	catch(IOException e) {
-    		throw new RuntimeException(IO_ERROR, e);
-    	}
-		queryNode.set("geometry", esriGeometry);
-		
-		if (esriGeometry != null) {
-			Iterator<String> fieldNames = esriGeometry.fieldNames();
-			while (fieldNames.hasNext()) {
-				String fieldName = fieldNames.next();
-				esriExtGeometry.set(fieldName, esriGeometry.get(fieldName));
+	    	catch(IOException e) {
+	    		throw new RuntimeException(IO_ERROR, e);
+	    	}
+			queryNode.set("geometry", esriGeometry);
+			
+			if (esriGeometry != null) {
+				Iterator<String> fieldNames = esriGeometry.fieldNames();
+				while (fieldNames.hasNext()) {
+					String fieldName = fieldNames.next();
+					esriExtGeometry.set(fieldName, esriGeometry.get(fieldName));
+				}
 			}
-		}
-    	//esriExtGeometry.set("geometry", esriGeometry);
-
-		ext.set("geometry", esriExtGeometry);
-		queryNode.set("extension", ext);
-    	return extraData;
+	    	//esriExtGeometry.set("geometry", esriGeometry);
+	
+			ext.set("geometry", esriExtGeometry);
+			queryNode.set("extension", ext);
+	    	return extraData;
+    	}
+    	catch (Exception ex) {
+    		ex.printStackTrace();
+    		throw ex;
+    	}
     }
 	
     private ObjectNode pointToEsri(Point p) {
