@@ -1,12 +1,8 @@
 package com.marklogic.geotools.basic;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,6 +13,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentState;
@@ -36,10 +34,12 @@ import org.opengis.feature.type.GeometryType;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.sort.SortBy;
 import org.opengis.filter.sort.SortOrder;
-import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.filter.Filter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, SimpleFeature> {
 
@@ -94,12 +94,56 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	    	this.index = query.getStartIndex();
 	    }
 	    generateReadFeatureRequestParams();
-	    
-        MarkLogicDataStore ml = (MarkLogicDataStore) contentState.getEntry().getDataStore();
-        geoQueryServices = ml.getGeoQueryServiceManager(); // this may throw an IOException if it could not connect
+
+	    // Need Support for checking authentication mechanism here
+		// If using "custom authentication" need to in some manner pick up the class they specify
+		// and create the authentication using whatever the current Spring Security Context says
+		// The below line will go get the current Principal String from Spring Security
+		//
+		//String user = getLogin();
+
+		geoQueryServices = getGeoQueryServices(contentState);
         featureBuilder = new SimpleFeatureBuilder(state.getFeatureType());
     }
-  
+
+    private GeoQueryServiceManager getGeoQueryServices(ContentState cs) {
+    	MarkLogicDataStore store = (MarkLogicDataStore) cs.getEntry().getDataStore();
+
+    	MarkLogicDataStore.UserConnectionDetails details = store.getUserConnectionDetails();
+    	// using a switch for future separation of authType (Basic, Digest, etc)
+    	switch(details.authType != null ? details.authType : "Unknown") {
+			case "PreAuthenticatedHeader":
+				// Pre Authenticated Headers for GEOAxIS end up Base64 encoded, and are Basic HTTP Spec formatted.
+				// This decodes, and returns just the userid, which is all the ML Rewriter needs for pre-authed users.
+				try {
+					String user = (new String(Base64.getDecoder().decode(getGeoServerLogin().substring(6)))).split(":")[0];
+					DatabaseClientFactory.BasicAuthContext sContext = new DatabaseClientFactory.BasicAuthContext(user, "");
+					DatabaseClient userClient = DatabaseClientFactory.newClient(details.host, details.port, sContext);
+					return new GeoQueryServiceManager(userClient);
+				} catch (NullPointerException npe) {
+					throw new IllegalStateException("Unable to create database client connection", npe);
+				}
+			default:
+				return store.getGeoQueryServiceManager();
+		}
+	}
+
+	/**
+	 * The getLogin method will retrieve the Spring Security Context and get the principal from it...
+	 * if it is undefined, it will return null.  Potentially should throw a security exception instead.
+	 */
+    private String getGeoServerLogin() {
+		Optional<SecurityContext> opt = Optional.ofNullable(SecurityContextHolder.getContext());
+		if (opt.isPresent()) {
+			Optional<Authentication> optAuth = Optional.ofNullable(opt.get().getAuthentication());
+			if (optAuth.isPresent()) {
+				return optAuth.get().getPrincipal().toString();
+			}
+		}
+		return null;
+
+	}
+
     private void generateFilterRequestParams(ObjectNode queryProperty) {
     	
     	LOGGER.log(Level.INFO, () -> "in generateFilterRequestParams(); Query:\n" + query.toString());
@@ -112,7 +156,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
         String sql = writer.toString();
     	
     	queryProperty.set("where", nodeFactory.textNode(sql));
-    };
+    }
     
     private void generateReadFeatureRequestParams() {
     	readFeatureRequestParams = nodeFactory.objectNode();
@@ -189,7 +233,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 				LOGGER.log(Level.INFO, () -> "Could not find property for property descriptor: " + propDesc.toString());
 		}
 		
-	};
+	}
 	
 	@Override
 	public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
@@ -331,8 +375,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 
 	/**
 	 * Read a GeoJSON doc from MarkLogic and parse into a SimpleFeature
-	 * @return
-	 * @throws IOException
+	 * @return simple feature
+	 * @throws IOException when things go sideways
 	 */
   SimpleFeature readFeature() throws IOException {
   	if (currentPage == null) { //first time we've accessed the backend store

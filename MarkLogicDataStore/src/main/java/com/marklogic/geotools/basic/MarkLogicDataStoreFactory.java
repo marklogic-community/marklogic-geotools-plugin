@@ -3,14 +3,19 @@ package com.marklogic.geotools.basic;
 import java.awt.RenderingHints.Key;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 
+import org.geotools.data.Parameter;
+import org.geotools.util.KVP;
 import org.geotools.util.logging.Logging;
 
 public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
@@ -63,6 +68,58 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 					null
 					);
 
+	public static final Param USER_AUTH_TYPE =
+			new Param(
+					"user-auth-type",
+					String.class,
+					"MarkLogic Server Authentication Type for Users: BasicAuthContext (Default), DigestAuthContext, Custom",
+					false,
+					"BasicAuthContext",
+					new KVP(
+							Parameter.OPTIONS,
+							Arrays.asList(new String[] {"Basic", "Digest","PreAuthenticatedHeader"}))
+			);
+
+//	public static final Param CUSTOM_AUTH_HEADER =
+//			new Param(
+//					"custom-auth-header",
+//					String.class,
+//					"HTTP Header where authentication token is provided.",
+//					false,
+//					null
+//			);
+
+//	/**
+//	 * TODO: Dynmically give the available Roles from the current Role Service in a list, instead of a text box.
+//	 */
+//	public static final Param CUSTOM_AUTH_DEFAULT_ROLE =
+//			new Param(
+//					"custom-auth-default-role",
+//					String.class,
+//					"Default GeoServer Role to assign to pre-authenticated users",
+//					false,
+//					null
+//			);
+
+	public static final Param ML_USER_HOST_PARAM =
+			new Param(
+					"user-hostname",
+					String.class,
+					"Host for the WFS users to query.",
+					false,
+					null
+			);
+
+	public static final Param ML_USER_PORT_PARAM =
+			new Param(
+					"user-port",
+					Integer.class,
+					"Port on the host for the WFS users to query.",
+					false,
+					null
+			);
+
+
 	@Override
 	public String getDisplayName() {
 		return "MarkLogic (Basic)";
@@ -75,7 +132,8 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public Param[] getParametersInfo() {
-		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM, NAMESPACE_PARAM};
+		return new Param[] {ML_HOST_PARAM, ML_PORT_PARAM, ML_USERNAME_PARAM, ML_PASSWORD_PARAM, ML_DATABASE_PARAM,
+				NAMESPACE_PARAM, USER_AUTH_TYPE, ML_USER_HOST_PARAM, ML_USER_PORT_PARAM};
 	}
 
 	@Override
@@ -120,18 +178,9 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 
 	@Override
 	public DataStore createDataStore(Map<String, Serializable> params) throws IOException {
-//		String host = (String) ML_HOST_PARAM.lookUp(params);
-//		Integer port = (Integer) ML_PORT_PARAM.lookUp(params);
-//		String username = (String) ML_USERNAME_PARAM.lookUp(params);
-//		String password = (String) ML_PASSWORD_PARAM.lookUp(params);
-//		String database = (String) ML_DATABASE_PARAM.lookUp(params);
-//		String namespace = (String) NAMESPACE_PARAM.lookUp(params);
-
 		for (String k : params.keySet()) {
 			LOGGER.log(Level.INFO, () -> "param key: {}" + k);
 		}
-//		SecurityContext c = new DatabaseClientFactory.DigestAuthContext(username, password);
-//		return new MarkLogicDataStore(host, port, c, database, namespace);
 		return new MarkLogicDataStore(params);
 	}
 
