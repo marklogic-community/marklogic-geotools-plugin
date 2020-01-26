@@ -30,6 +30,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 
 	DatabaseClient client;
 	GeoQueryServiceManager geoQueryServices;
+	UserConnectionDetails userConnectionDetails;
 
 	private QueryCapabilities queryCapabilities;
 	private FilterCapabilities filterCapabilities;
@@ -61,6 +62,12 @@ public class MarkLogicDataStore extends ContentDataStore {
 		String database = (String) MarkLogicDataStoreFactory.ML_DATABASE_PARAM.lookUp(map);
 		String namespace = (String) MarkLogicDataStoreFactory.NAMESPACE_PARAM.lookUp(map);
 
+		String userAuthType = (String) MarkLogicDataStoreFactory.USER_AUTH_TYPE.lookUp(map);
+		String userHost = (String) MarkLogicDataStoreFactory.ML_USER_HOST_PARAM.lookUp(map);
+		Integer userPort = (Integer) MarkLogicDataStoreFactory.ML_USER_PORT_PARAM.lookUp(map);
+
+		this.userConnectionDetails = new UserConnectionDetails(userHost, userPort, userAuthType);
+
 		this.queryCapabilities = buildQueryCapabilities();
 		this.filterCapabilities = buildFilterCapabilities();
 		
@@ -72,6 +79,17 @@ public class MarkLogicDataStore extends ContentDataStore {
 		setupClient(host,port,new DatabaseClientFactory.DigestAuthContext(username,password), database);
 		setNamespaceURI(namespace);
 		setupGeoQueryServices();
+	}
+
+	class UserConnectionDetails {
+		public String host;
+		public Integer port;
+		public String authType;
+		public UserConnectionDetails(String host, Integer port, String authType) {
+			this.host = host;
+			this.port = port;
+			this.authType = authType;
+		}
 	}
 
 	public QueryCapabilities buildQueryCapabilities() {
@@ -108,6 +126,10 @@ public class MarkLogicDataStore extends ContentDataStore {
 			queryCapabilities = buildQueryCapabilities();
 		}
 		return queryCapabilities;
+	}
+
+	public UserConnectionDetails getUserConnectionDetails() {
+		return this.userConnectionDetails;
 	}
 	
 	public FilterCapabilities getFilterCapabilities() {
