@@ -99,7 +99,7 @@ task deployGeoServerPluginJars(type: Copy) {
 
 task deploy(dependsOn: ['deleteConflictingGeoServerJars', 'deployGeoServerPluginJars']) {}
 
-task buildZip(type: Zip) {
+task buildZip(type: Zip, dependsOn: ['build']) {
     from 'build.gradle'
     from 'gradle.properties'
     from 'gradlew'
