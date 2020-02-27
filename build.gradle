@@ -1,39 +1,126 @@
-
 plugins {
-    id "com.github.dkorotych.gradle-maven-exec" version "2.0"
-    id "net.saliman.properties" version "1.4.6"
-    id "com.marklogic.ml-gradle" version "3.10.2"
+    id 'java'
+    id 'jacoco'
 }
 
-def geoserverLib = "${geoserverHome}/webapps/geoserver/WEB-INF/lib"
+group 'com.marklogic.geotools'
+version '1.0-SNAPSHOT'
 
-// execute the Maven package for the MarkLogicDataStore sub-module
-// and download dependencies into MarkLogicDataStore/target/dependency
-task buildMarkLogicDataStore(type: MavenExec) {
-    workingDir "MarkLogicDataStore"
-    goals 'clean', 'package', 'dependency:copy-dependencies'
+sourceCompatibility = 1.8
+
+repositories {
+    maven {
+        url 'http://download.osgeo.org/webdav/geotools/'
+    }
+    maven {
+        url 'http://repo.boundlessgeo.com/main'
+    }
+    mavenCentral()
+    jcenter()
 }
 
-task deleteConflictingGeoserverJars(type: Delete) {
-    delete fileTree(dir: geoserverLib, include: ["slf4j-api-1.6.4.jar", "jackson-core-2.5.0.jar"])
+ext {
+    $geotoolsVersion = '22.0'
+    $jtsVersion = '1.16.1'
+    $springSecurityVersion = '5.1.5.RELEASE'
+    $springVersion = '5.1.5.RELEASE'
 }
 
-task copyGeoserverPluginJars(type: Copy) {
-    def marklogicDataStoreTarget = "MarkLogicDataStore/target"
+dependencies {
+    compile group: 'org.geotools', name: 'gt-geojson', version: $geotoolsVersion
+    compile group: 'org.geotools', name: 'gt-main', version: $geotoolsVersion
+    compile group: 'org.geotools', name: 'gt-cql', version: $geotoolsVersion
+    compile group: 'org.geotools', name: 'gt-epsg-hsql', version: $geotoolsVersion
+    compile group: 'org.geotools', name: 'gt-jdbc', version: $geotoolsVersion
+    compile group: 'org.locationtech.jts', name: 'jts-core', version: $jtsVersion
+    compile group: 'com.marklogic', name: 'marklogic-client-api', version:'4.0.4'
+    compile group: 'org.apache.commons', name: 'commons-collections4', version:'4.2'
+    compile group: 'org.glassfish.jersey.core', name:'jersey-client',version:'2.25.1'
+    testCompile group: 'org.slf4j', name:'slf4j-api', version:'1.7.25'
+    testCompile group: 'org.slf4j', name:'slf4j-log4j12', version:'1.7.25'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.springframework', name: 'spring-core', version: $springVersion
+    compile group: 'org.springframework', name: 'spring-beans', version: $springVersion
+    compile group: 'org.springframework', name: 'spring-context', version: $springVersion
+    compile group: 'org.springframework.security', name: 'spring-security-bom', version: $springSecurityVersion
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: $springSecurityVersion
+    compile group: 'org.springframework.security', name: 'spring-security-config', version: $springSecurityVersion
+    compile group: 'org.springframework.security', name: 'spring-security-core', version: $springSecurityVersion
+}
+
+
+jacoco {
+    toolVersion = "0.8.4"
+    reportsDir = file("$buildDir/jacocoReports")
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoReports/html")
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'COMPLEXITY'
+                value = 'COVEREDRATIO'
+                minimum = 0.2
+            }
+        }
+    }
+}
+
+def geoServerLib = "${geoServerHome}/webapps/geoserver/WEB-INF/lib"
+
+task deleteConflictingGeoServerJars(type: Delete) {
+    delete fileTree(dir: geoServerLib, include: ["slf4j-api-1.6.4.jar", "jts-core-1.16.0.jar","commons-collections4-4.1.jar"])
+}
+
+task deployGeoServerPluginJars(type: Copy) {
     outputs.upToDateWhen {
         false
     }
-    from("${marklogicDataStoreTarget}") {
+    from("build/libs") {
         include '*.jar'
     }
-    from("${marklogicDataStoreTarget}/dependency") {
+    from configurations.default {
         include '*.jar'
+        exclude "commons-lang3-3.7.jar", "jackson-core-2.9.4.jar"
     }
-    into geoserverLib
+    into geoServerLib
 }
 
-task deployGeoserverPlugin(dependsOn: ['deleteConflictingGeoserverJars', 'copyGeoserverPluginJars']) {}
-deployGeoserverPlugin.mustRunAfter('buildMarkLogicDataStore')
+task deploy(dependsOn: ['deleteConflictingGeoServerJars', 'deployGeoServerPluginJars']) {}
 
-task build(dependsOn: 'buildMarkLogicDataStore')
-task deploy(dependsOn: ['build', 'deployGeoserverPlugin']){}
+task buildZip(type: Zip, dependsOn: ['build']) {
+    from 'build.gradle'
+    from 'gradle.properties'
+    from 'gradlew'
+    from 'gradlew.bat'
+    from 'settings.gradle'
+    from 'LICENSE'
+    from 'README.md'
+    into ('gradle/wrapper') { from "gradle/wrapper" }
+    into ('lib') { from "build/libs" }
+    into ('dependencies') {
+        from configurations.default {
+            include '*.jar'
+            exclude "commons-lang3-3.7.jar", "jackson-core-2.9.4.jar"
+        }
+    }
+    into ('src') { from "src" }
+}
+
+task deployOffline(type: Copy, dependsOn: ['deleteConflictingGeoServerJars']) {
+    outputs.upToDateWhen {false}
+    from('lib') { include '*.jar' }
+    from('dependencies') { include '*.jar' }
+    into geoServerLib
+}
