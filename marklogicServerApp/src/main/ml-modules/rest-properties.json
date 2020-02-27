@@ -1,6 +1,0 @@
-{
-  "debug" : true,
-  "validate-queries" : true,
-  "document-transform-all" : true,
-  "validate-options" : true
-}
