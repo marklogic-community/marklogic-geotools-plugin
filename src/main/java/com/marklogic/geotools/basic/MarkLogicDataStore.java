@@ -175,7 +175,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 		
 		try {
 			List<Name> nameList;
-			nameList = geoQueryServices.getLayerNames();
+			nameList = geoQueryServices.getLayerNames(namespaceURI);
 			
 			LOGGER.info("**************************************************************************");
 			LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));

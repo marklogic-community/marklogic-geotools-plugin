@@ -26,9 +26,12 @@ public class GeoQueryServiceManager extends ResourceManager {
        // Initialize the Resource Manager via the Database Client
       client.init(NAME, this);
    }
-    
-    
+
    public List<Name> getLayerNames() throws Exception {
+        return getLayerNames(null);
+   }
+    
+   public List<Name> getLayerNames(String namespaceURI) throws Exception {
     ResourceServices services = getServices();
     RequestParameters params = new RequestParameters();
     params.add("service", NAME);
@@ -45,7 +48,7 @@ public class GeoQueryServiceManager extends ResourceManager {
     while (elements.hasNext()) {
         JsonNode node = elements.next();
         System.out.println(node.toString());
-        Name n = new NameImpl(null, node.asText());
+        Name n = new NameImpl(namespaceURI, node.asText());
 
         layerNames.add(n);
     }
