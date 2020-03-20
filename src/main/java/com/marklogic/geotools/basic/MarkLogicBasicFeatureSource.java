@@ -238,16 +238,16 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	protected Class<?> geometryToClass(String geoType) {
 		Class<?> binding = String.class;
 
-		if ("Point".contentEquals(geoType)) {
+		if ("Point".equalsIgnoreCase(geoType)) {
 			binding = MultiPoint.class;
 		}
-		else if ("Linestring".contentEquals(geoType)) {
+		else if ("LineString".equalsIgnoreCase(geoType)) {
 			binding = MultiLineString.class;
 		}
-		else if ("Polygon".contentEquals(geoType)) {
+		else if ("Polygon".equalsIgnoreCase(geoType)) {
 			binding = MultiPolygon.class;
 		}
-		else if ("MultiPolygon".contentEquals(geoType)) {
+		else if ("MultiPolygon".equalsIgnoreCase(geoType)) {
 			binding = MultiPolygon.class;
 		}
 		return binding;
@@ -257,34 +257,34 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		Class<?> binding = String.class;
 		String type = node.get("type").asText();
 
-		if ("geometry".contentEquals(type)) {
+		if ("geometry".equalsIgnoreCase(type)) {
 			String geoType = node.get("geometryType").asText();
-			if ("point".contentEquals(geoType)) {
+			if ("point".equalsIgnoreCase(geoType)) {
 				binding = MultiPoint.class;
 			}
-			else if ("linestring".contentEquals(geoType)) {
+			else if ("linestring".equalsIgnoreCase(geoType)) {
 				binding = MultiLineString.class;
 			}
-			else if ("polygon".contentEquals(geoType)) {
+			else if ("polygon".equalsIgnoreCase(geoType)) {
 				binding = MultiPolygon.class;
 			}
-			else if ("MultiPolygon".contentEquals(geoType)) {
+			else if ("multipolygon".equalsIgnoreCase(geoType)) {
 				binding = MultiPolygon.class;
 			}
 		}
-		else if ("String".contentEquals(type)) {
+		else if ("String".equalsIgnoreCase(type)) {
 			binding = String.class;
 		}
-		else if ("Integer".contentEquals(type)) {
+		else if ("Integer".equalsIgnoreCase(type)) {
 			binding = Integer.class;
 		}
-		else if ("Double".contentEquals(type)) {
+		else if ("Double".equalsIgnoreCase(type)) {
 			binding = Double.class;
 		}
-		else if ("boolean".contentEquals(type)) {
+		else if ("boolean".equalsIgnoreCase(type)) {
 			binding = Boolean.class;
 		}
-		else if ("Date".contentEquals(type)) {
+		else if ("Date".equalsIgnoreCase(type)) {
 			binding = Date.class;
 		}
 		return binding;
