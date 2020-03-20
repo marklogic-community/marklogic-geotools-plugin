@@ -1,7 +1,7 @@
-#MarkLogic GeoTools Plugin & GeoServer Installation
+# MarkLogic GeoTools Plugin & GeoServer Installation
 
 ---
-##Step 1. Install GeoServer
+## Step 1. Install GeoServer
 
 1. Download Platform Independent Binary version of GeoServer 2.16.0 from http://geoserver.org/release/2.16.0/ 
 2. Using the Operating System user that you want to run geoserver under, unzip the file:
@@ -127,7 +127,7 @@
 
 
 ---
-##Step 2:  Deploy the MarkLogic GeoTools Driver
+## Step 2:  Deploy the MarkLogic GeoTools Driver
 1. Add the MarkLogic GeoTools Driver and Dependencies to the WAR deployed in Step 1.
     * Copy the MarkLogicGeoToolsDriver*.jar and all jars in the dependency folder to the geoserver war/WEB-INF/lib directory
     * OR, use the ./gradlw deployOffline  or the ./gradlew deployGeoServerPluginJars
@@ -137,7 +137,7 @@
 
 
 ---
-##Step 3. Start GeoServer
+## Step 3. Start GeoServer
 Depending on how you have setup your service use:
 
 `systemctl start geoserver.service`
