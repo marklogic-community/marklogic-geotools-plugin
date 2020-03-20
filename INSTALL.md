@@ -1,4 +1,4 @@
-#MarkLogic GeoTools Driver & GeoServer Installation
+#MarkLogic GeoTools Plugin & GeoServer Installation
 
 ---
 ##Step 1. Install GeoServer
