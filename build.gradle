@@ -23,7 +23,7 @@ ext {
     $geotoolsVersion = '22.0'
     $jtsVersion = '1.16.1'
     $springSecurityVersion = '5.1.5.RELEASE'
-    $springVersion = '5.1.5.RELEASE'
+    $springVersion = '5.1.6.RELEASE'
 }
 
 dependencies {
@@ -79,8 +79,15 @@ jacocoTestCoverageVerification {
 
 def geoServerLib = "${geoServerHome}/webapps/geoserver/WEB-INF/lib"
 
+/**
+ * This task deletes any conflicting jars from geoserver
+ * This list will need to be updated upon ANY change to geoserver version
+ */
 task deleteConflictingGeoServerJars(type: Delete) {
     delete fileTree(dir: geoServerLib, include: ["slf4j-api-1.6.4.jar", "jts-core-1.16.0.jar","commons-collections4-4.1.jar"])
+    delete fileTree(dir: geoServerLib, include: ["spring-aop-5.1.1.RELEASE.jar", "spring-beans-5.1.1.RELEASE.jar", "spring-context-5.1.1.RELEASE.jar",
+                                                 "spring-core-5.1.1.RELEASE.jar", "spring-expression-5.1.1.RELEASE.jar", "spring-jcl-5.1.1.RELEASE.jar",
+                                                 "spring-web-5.1.1.RELEASE.jar"])
 }
 
 task deployGeoServerPluginJars(type: Copy) {
