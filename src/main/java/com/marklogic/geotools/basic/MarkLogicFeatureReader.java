@@ -55,7 +55,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private SimpleFeature next;
     
     private String sqlQuery;
-    private long index = 1;
+    private long index = 0;
     private long pageLength = 200;
     private int maxFeatures;
     private int featuresRead = 0;
