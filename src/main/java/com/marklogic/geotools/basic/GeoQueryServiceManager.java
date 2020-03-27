@@ -9,15 +9,18 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marklogic.client.io.JacksonHandle;
 
 import org.geotools.feature.NameImpl;
+import org.geotools.util.logging.Logging;
 import org.opengis.feature.type.Name;
 
 public class GeoQueryServiceManager extends ResourceManager {
+    private static final Logger LOGGER = Logging.getLogger(GeoQueryServiceManager.class);
 
     static final public String NAME="geoQueryService";
     public GeoQueryServiceManager(DatabaseClient client) {
@@ -47,7 +50,9 @@ public class GeoQueryServiceManager extends ResourceManager {
     Iterator<JsonNode> elements = result.elements();
     while (elements.hasNext()) {
         JsonNode node = elements.next();
-        System.out.println(node.toString());
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(node.toString());
+        }
         Name n = new NameImpl(namespaceURI, node.asText());
 
         layerNames.add(n);
@@ -66,7 +71,9 @@ public class GeoQueryServiceManager extends ResourceManager {
 	    
 	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
 	    JsonNode result = resultHandle.get();
-	    System.out.println(result.toString());
+	    if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(result.toString());
+        }
 	    return result;
    }
    
@@ -81,31 +88,25 @@ public class GeoQueryServiceManager extends ResourceManager {
 	    
 	    JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
 	    JsonNode result = resultHandle.get();
-	    System.out.println("Count result:");
-	    System.out.println(result.toString());
+	    if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("Count result:" + result.toString());
+        }
 	    return result.get("count").asInt();
    }
    
    public JsonNode getFeatures(JsonNode serviceParams) throws Exception {
-	   //System.out.println("GeoQueryServiceManager.getFeatures(): index = " + index + "; pageSize = " + pageSize);
+
 	   ResourceServices services = getServices();
 	   RequestParameters params = new RequestParameters();
 	   params.add("service", NAME);
-	   
-	   //String query = sqlQuery;
-	   //if (sqlQuery == null) query = "1=1";
-	   
-	   //String serviceParams = "{\"params\": "
-	   //		+ "{\"method\":\"query\", \"id\":\"" + serviceName + "\", \"layer\":" + layerId + "}, "
-	   //		+ "\"query\":{\"resultOffset\":" + index + ", \"resultRecordCount\":" + pageSize + ", \"where\":\"" + query + "\", \"returnGeometry\":true}}";
-	   
-	   //ObjectMapper objectMapper = new ObjectMapper();	    
-	   //JsonNode json = objectMapper.readTree(serviceParams);
-	   
+
 	   JacksonHandle resultHandle = services.post(params,new JacksonHandle(serviceParams), new JacksonHandle());
 	   JsonNode result = resultHandle.get();
-	   System.out.println("getFeatures result:");
-	   System.out.println(result.toString());
+
+	   if (LOGGER.isLoggable(Level.FINE)) {
+           LOGGER.fine("getFeatures result:");
+           LOGGER.fine(result.toString());
+       }
 	   return result;	    
    }
 }

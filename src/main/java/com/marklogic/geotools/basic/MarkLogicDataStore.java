@@ -166,20 +166,24 @@ public class MarkLogicDataStore extends ContentDataStore {
 	 */
 	protected List<Name> createTypeNames() throws IOException {
 
-		LOGGER.info("**************************************************************************");
-		LOGGER.info("createTypeNames called!");
-		LOGGER.info("Datastore namespace: " + getNamespaceURI());
-		LOGGER.info("**************************************************************************");
+		if (LOGGER.isLoggable(Level.FINE)) {
+			LOGGER.fine("**************************************************************************");
+			LOGGER.fine("createTypeNames called!");
+			LOGGER.fine("Datastore namespace: " + getNamespaceURI());
+			LOGGER.fine("**************************************************************************");
+		}
 		
 		GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(client);
 		
 		try {
 			List<Name> nameList;
 			nameList = geoQueryServices.getLayerNames(namespaceURI);
-			
-			LOGGER.info("**************************************************************************");
-			LOGGER.log(Level.INFO, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
-			LOGGER.info("**************************************************************************");
+
+			if (LOGGER.isLoggable(Level.FINE)) {
+				LOGGER.fine("**************************************************************************");
+				LOGGER.log(Level.FINE, () -> "Names returned: " + Arrays.toString(nameList.toArray()));
+				LOGGER.fine("**************************************************************************");
+			}
 
 			return nameList;
 			
@@ -202,7 +206,9 @@ public class MarkLogicDataStore extends ContentDataStore {
 	
 	@Override
   protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
-    LOGGER.info("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
+		if (LOGGER.isLoggable(Level.FINE)) {
+			LOGGER.fine("MarkLogicDataStore.createFeatureSource: entry.getName() = " + entry.getName().getNamespaceURI() + ":" + entry.getName().getLocalPart());
+		}
 		return new MarkLogicBasicFeatureSource(entry, Query.ALL);
   }
 
