@@ -10,10 +10,7 @@ sourceCompatibility = 1.8
 
 repositories {
     maven {
-        url 'http://download.osgeo.org/webdav/geotools/'
-    }
-    maven {
-        url 'http://repo.boundlessgeo.com/main'
+        url 'https://repo.osgeo.org/repository/release/'
     }
     mavenCentral()
     jcenter()
