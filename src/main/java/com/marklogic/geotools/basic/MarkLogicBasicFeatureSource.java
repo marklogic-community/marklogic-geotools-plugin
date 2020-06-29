@@ -206,6 +206,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		
 		idField = metadata.get("idField").asText();
 		builder.add(idField, Integer.class);
+		
+		builder.setDefaultGeometry("geometry");
 		/*
 		JsonNode geometryColumnNode = metadata.get("geometrySource");
 		if (geometryColumnNode == null) {
