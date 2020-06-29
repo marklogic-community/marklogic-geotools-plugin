@@ -285,8 +285,8 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		GeometryJSON gj = new GeometryJSON();
 		Geometry readGeo = gj.read(new StringReader(geometryNode.toString()));
 		AttributeType geoAttrType = featureType.getType("the_geom");
-		Object geoValue = Converters.convert(readGeo, geoAttrType.getBinding());
-		featureBuilder.set("the_geom", geoValue);
+		//Object geoValue = Converters.convert(readGeo, geoAttrType.getBinding());
+		featureBuilder.set("the_geom", readGeo);
 		
 		LOGGER.log(Level.FINE, "readGeo:");
 		LOGGER.log(Level.FINE, readGeo.toString());

@@ -222,8 +222,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		}
 		*/
 		
-		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
-		builder.add("the_geom", geoBinding);
+//		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
+//		builder.add("the_geom", geoBinding);
 		
 		for (JsonNode node : schema) {
 			String name = node.get("name").asText();
