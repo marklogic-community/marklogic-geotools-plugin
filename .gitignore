@@ -1,3 +1,8 @@
 .idea
 .gradle
 gradle-local.properties
+bin
+build
+.project
+.classpath
+.settings
