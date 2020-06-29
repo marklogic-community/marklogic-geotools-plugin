@@ -281,6 +281,7 @@ public class MarkLogicTest {
         	System.out.println("reading feature...");
             SimpleFeature feature = reader.next();
             System.out.println("Feature ID: " + feature.getID());
+            System.out.println("Feature geometry: " + feature.getDefaultGeometry().toString());
             count++;
           }
           System.out.println("close feature reader");

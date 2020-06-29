@@ -1,6 +1,7 @@
 package com.marklogic.geotools.basic;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.logging.Level;
@@ -22,6 +23,7 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.util.Converters;
 import org.geotools.util.logging.Logging;
 import org.locationtech.jts.geom.Geometry;
@@ -274,9 +276,22 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	
 	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
 		LOGGER.log(Level.INFO, () -> "parsing feature...");
-		JsonNode properties = node.get("properties");
-		Iterator<String> fieldNames = properties.fieldNames();
+
 		SimpleFeatureType featureType = getFeatureType();
+		
+
+		JsonNode properties = node.get("properties");
+		JsonNode geometryNode = node.get("geometry");
+		GeometryJSON gj = new GeometryJSON();
+		Geometry readGeo = gj.read(new StringReader(geometryNode.toString()));
+		AttributeType geoAttrType = featureType.getType("the_geom");
+		Object geoValue = Converters.convert(readGeo, geoAttrType.getBinding());
+		featureBuilder.set("the_geom", geoValue);
+		
+		LOGGER.log(Level.FINE, "readGeo:");
+		LOGGER.log(Level.FINE, readGeo.toString());
+		
+		Iterator<String> fieldNames = properties.fieldNames();
 		String id = null;
 		
 		id = node.get("id").asText();
