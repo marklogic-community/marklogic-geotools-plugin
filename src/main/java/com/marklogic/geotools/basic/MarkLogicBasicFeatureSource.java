@@ -59,7 +59,6 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private String idField;
 	private String geometryColumn;
 	private AttributeTypeBuilder attributeBuilder;
-	private SimpleFeatureType geoJsonFeatureType;
 	
 	private GeoQueryServiceManager geoQueryServices = getDataStore().getGeoQueryServiceManager();
     
@@ -76,7 +75,6 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
         hints.add(Hints.GEOMETRY_DISTANCE);
         this.hints = Collections.unmodifiableSet(hints);
         
-        geoJsonFeatureType = buildFeatureType(true);
 	}
 	
 	@Override 
@@ -173,7 +171,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
-		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId, idField, geometryColumn, geoJsonFeatureType);
+		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId, idField, geometryColumn);
 	}
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
@@ -193,7 +191,8 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		return descriptor;
 	}
 	
-	private SimpleFeatureType buildFeatureType(boolean includeGeometry) {
+	@Override
+	protected SimpleFeatureType buildFeatureType() throws IOException {
 		if (dbMetadata == null) {
 			retrieveDBMetadata(this.entry, this.query);
 		}
@@ -209,11 +208,9 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		idField = metadata.get("idField").asText();
 		builder.add(idField, Integer.class);
 		
-		if (includeGeometry) {
-	 		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
-	 		//AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
-	 		builder.add("geometry", geoBinding);
-		}
+ 		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
+ 		//AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
+ 		builder.add("geometry", geoBinding);
 		/*
 		JsonNode geometryColumnNode = metadata.get("geometrySource");
 		if (geometryColumnNode == null) {
@@ -244,11 +241,6 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		}
 		// build the type (it is immutable and cannot be modified)
 		return builder.buildFeatureType();
-	}
-	
-	@Override
-	protected SimpleFeatureType buildFeatureType() throws IOException {
-		return buildFeatureType(false);
 	}
 
 	protected Class<?> geometryToClass(String geoType) {

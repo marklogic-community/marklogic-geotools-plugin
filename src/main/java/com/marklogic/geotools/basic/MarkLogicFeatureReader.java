@@ -70,13 +70,12 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private SimpleFeatureBuilder featureBuilder;
     private String idField;
     private String geometryColumn;
-    private SimpleFeatureType geoJsonFeatureType;
     private WKTReader2 wktReader = new WKTReader2();
 
 	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
     
     
-    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn, SimpleFeatureType geoFeatureType) throws IOException {
+    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn) throws IOException {
         this.state = contentState;
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.toString());
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.getSortBy()[0].toString());
@@ -107,8 +106,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		//String user = getLogin();
 
 		geoQueryServices = getGeoQueryServices(contentState);
-        geoJsonFeatureType = geoFeatureType;
-        featureBuilder = new SimpleFeatureBuilder(geoJsonFeatureType);
+		featureBuilder = new SimpleFeatureBuilder(state.getFeatureType());
     }
     
     private GeoQueryServiceManager getGeoQueryServices(ContentState cs) {
@@ -185,7 +183,12 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     		queryProperty.set("outFields", nodeFactory.textNode("*"));
     	}
     	else {
-    		String[] propertyNames = query.getPropertyNames();
+    		ArrayList<String> temp = new ArrayList<String>();
+    		for (String prop : query.getPropertyNames()) {
+    			if (!prop.equals("geometry")) temp.add(prop);
+    		}
+    		String[] propertyNames = temp.toArray(new String[1]);
+    		
     		String outFields = "";
     		for (int i = 0; i < propertyNames.length; i++) {
     			if (i > 0) outFields += ", ";
@@ -280,7 +283,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
 		LOGGER.log(Level.INFO, () -> "parsing feature...");
 
-		SimpleFeatureType featureType = geoJsonFeatureType;
+		SimpleFeatureType featureType = getFeatureType();
 		
 
 		JsonNode properties = node.get("properties");
