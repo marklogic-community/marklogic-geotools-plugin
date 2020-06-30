@@ -19,12 +19,9 @@ import org.geotools.feature.type.FeatureTypeFactoryImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.MultiPoint;
 import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.factory.Hints.Key;
 import org.geotools.util.logging.Logging;
@@ -38,26 +35,14 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.sort.SortBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.document.JSONDocumentManager;
-import com.marklogic.client.io.Format;
-import com.marklogic.client.io.JacksonHandle;
-import com.marklogic.client.io.SearchHandle;
-import com.marklogic.client.io.StringHandle;
-import com.marklogic.client.io.ValuesHandle;
-import com.marklogic.client.query.QueryManager;
-import com.marklogic.client.query.RawCombinedQueryDefinition;
-import com.marklogic.client.query.StructuredQueryBuilder;
-import com.marklogic.client.query.StructuredQueryDefinition;
-import com.marklogic.client.query.ValuesDefinition;
 
 public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private static final Logger LOGGER = Logging.getLogger(MarkLogicBasicFeatureSource.class);
+	private static final String GEOMETRY_COLUMN_NAME = "MARKLOGIC_GEOTOOLS_PLUGIN_GEOMETRY";
 	private JsonNode dbMetadata;
 	private String serviceName;
 	private int layerId;
 	private String idField;
-	private String geometryColumn;
 	private AttributeTypeBuilder attributeBuilder;
 	
 	private GeoQueryServiceManager geoQueryServices = getDataStore().getGeoQueryServiceManager();
@@ -171,7 +156,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 
 	@Override
 	protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(Query query) throws IOException {
-		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId, idField, geometryColumn);
+		return new MarkLogicFeatureReader(getState(), query, serviceName, layerId, idField, GEOMETRY_COLUMN_NAME);
 	}
 
 	protected AttributeDescriptor buildAttributeDescriptor(String name, Class<?> binding) {
@@ -210,7 +195,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		
  		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
  		//AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
- 		builder.add("geometry", geoBinding);
+ 		builder.add(GEOMETRY_COLUMN_NAME, geoBinding);
 		/*
 		JsonNode geometryColumnNode = metadata.get("geometrySource");
 		if (geometryColumnNode == null) {

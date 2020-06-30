@@ -185,7 +185,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     	else {
     		ArrayList<String> temp = new ArrayList<String>();
     		for (String prop : query.getPropertyNames()) {
-    			if (!prop.equals("geometry")) temp.add(prop);
+    			if (!prop.equals(geometryColumn)) temp.add(prop);
     		}
     		String[] propertyNames = temp.toArray(new String[1]);
     		
@@ -287,15 +287,21 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		
 
 		JsonNode properties = node.get("properties");
-		JsonNode geometryNode = node.get("geometry");
-		GeometryJSON gj = new GeometryJSON();
-		Geometry readGeo = gj.read(new StringReader(geometryNode.toString()));
-		//AttributeType geoAttrType = featureType.getType("geometry");
-		//Object geoValue = Converters.convert(readGeo, geoAttrType.getBinding());
-		featureBuilder.set("geometry", readGeo);
 		
-		LOGGER.log(Level.FINE, "readGeo:");
-		LOGGER.log(Level.FINE, readGeo.toString());
+		//get the geometry and assign it to the internal geometry column name.
+		//We don't use this as a request back to the server because the
+		//backing services understand whether to get the geometry or not based
+		//on the "returnGeometry" service parameter
+		JsonNode geometryNode = node.get("geometry");
+		if (geometryNode != null && !(geometryNode instanceof NullNode)) {
+			GeometryJSON gj = new GeometryJSON();
+			Geometry readGeo = gj.read(new StringReader(geometryNode.toString()));
+		
+			featureBuilder.set(geometryColumn, readGeo);
+		
+			LOGGER.log(Level.FINE, "readGeo:");
+			LOGGER.log(Level.FINE, readGeo.toString());
+		}
 		
 		Iterator<String> fieldNames = properties.fieldNames();
 		String id = null;
