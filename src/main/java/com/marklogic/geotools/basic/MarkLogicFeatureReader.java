@@ -23,6 +23,7 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.util.Converters;
 import org.geotools.util.logging.Logging;
@@ -69,12 +70,13 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     private SimpleFeatureBuilder featureBuilder;
     private String idField;
     private String geometryColumn;
+    private SimpleFeatureType geoJsonFeatureType;
     private WKTReader2 wktReader = new WKTReader2();
 
 	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
     
     
-    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn) throws IOException {
+    MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn, SimpleFeatureType geoFeatureType) throws IOException {
         this.state = contentState;
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.toString());
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.getSortBy()[0].toString());
@@ -105,9 +107,10 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 		//String user = getLogin();
 
 		geoQueryServices = getGeoQueryServices(contentState);
-        featureBuilder = new SimpleFeatureBuilder(state.getFeatureType());
+        geoJsonFeatureType = geoFeatureType;
+        featureBuilder = new SimpleFeatureBuilder(geoJsonFeatureType);
     }
-
+    
     private GeoQueryServiceManager getGeoQueryServices(ContentState cs) {
     	MarkLogicDataStore store = (MarkLogicDataStore) cs.getEntry().getDataStore();
 
@@ -277,7 +280,7 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
 	private SimpleFeature parseJsonFeature(JsonNode node) throws Exception {
 		LOGGER.log(Level.INFO, () -> "parsing feature...");
 
-		SimpleFeatureType featureType = getFeatureType();
+		SimpleFeatureType featureType = geoJsonFeatureType;
 		
 
 		JsonNode properties = node.get("properties");
