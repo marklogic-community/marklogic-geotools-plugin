@@ -33,6 +33,8 @@ import org.opengis.feature.type.GeometryType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 import org.opengis.filter.sort.SortBy;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.referencing.CRS;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -44,6 +46,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 	private int layerId;
 	private String idField;
 	private AttributeTypeBuilder attributeBuilder;
+	private CoordinateReferenceSystem crs;
 	
 	private GeoQueryServiceManager geoQueryServices = getDataStore().getGeoQueryServiceManager();
     
@@ -108,6 +111,13 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 			if (LOGGER.isLoggable(Level.FINE)) {
 				LOGGER.fine("serviceName: " + serviceName + " layerId: " + layerId);
 			}
+			try {
+				crs = CRS.decode(dbMetadata.get("metadata").get("geoServerMetadata").get("coordinateSystem").asText());
+			}
+			catch(Exception ex) {
+				LOGGER.log(Level.WARNING, "No layer-level CRS specified for " + serviceName + " layerId " + layerId + "; defaulting to EPSG:4326");
+				crs = DefaultGeographicCRS.WGS84;
+			}	
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -128,12 +138,22 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		JsonNode extent = dbMetadata.get("metadata").get("extent");
 		LOGGER.log(Level.INFO, () -> "Extent: " + extent.toString());
 		
+		CoordinateReferenceSystem extentCRS = DefaultGeographicCRS.WGS84;
+		String extentCRSStr = extent.get("spatialReference").get("wkid").asText();
+		try {
+			extentCRS = CRS.decode(extentCRSStr);
+		}
+		catch(Exception ex) {
+			//throw new IOException(ex);
+			LOGGER.log(Level.WARNING, () -> "Error getting extent CRS, defaulting to EPSG:4326");
+		}
+		
 		ReferencedEnvelope env = new ReferencedEnvelope(
 				extent.get("xmin").asDouble(), 
 				extent.get("xmax").asDouble(),
 				extent.get("ymin").asDouble(),
 				extent.get("ymax").asDouble(),
-				DefaultGeographicCRS.WGS84);
+				extentCRS);
 		return env;
 	}
 
@@ -184,7 +204,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
 		builder.setName(entry.getName());
-		builder.setCRS( DefaultGeographicCRS.WGS84 );
+		builder.setCRS( crs );
 		builder.setNamespaceURI(getDataStore().getNamespaceURI());
 
 		JsonNode metadata = dbMetadata.get("metadata");
