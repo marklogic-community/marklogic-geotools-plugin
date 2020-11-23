@@ -129,11 +129,12 @@
 ---
 ## Step 2:  Deploy the MarkLogic GeoTools Driver
 1. Add the MarkLogic GeoTools Driver and Dependencies to the WAR deployed in Step 1.
-    * Copy the MarkLogicGeoToolsDriver*.jar and all jars in the dependency folder to the geoserver war/WEB-INF/lib directory
-    * OR, use the ./gradlw deployOffline  or the ./gradlew deployGeoServerPluginJars
+    * Build the driver without running the test cases by running ./gradlew build -x test.
+    * Copy the MarkLogicGeoToolsDriver*.jar and all jars in the dependency folder to the geoserver war/WEB-INF/lib directory.
+    * OR, use the ./gradlew deployOffline  or the ./gradlew deployGeoServerPluginJars tasks.
 
 *GeoTools Driver Notes:*
-* There is a gradle task that will copy the jars if the gradle.properties is pointing in the correct location for your Tomcat.
+* The deployGeoServerPluginJars gradle task will copy the jars to the property location if the geoServerHome property in gradle.properties is pointing to the correct location of Tomcat or the GeoServer binary distribution.
 
 
 ---
@@ -172,12 +173,13 @@ or
         * Username is an administrative user on the MarkLogic Cluster
         * Password is the adminsitrative user's password on the MarkLogic Cluster
         * Database is the corresponding database (eg. `som-content`)
-        * User-Auth-Type should be `PreAuthenticatedHeader` to enable GeoAxis to be the Authentication mechanism
+        * User-Auth-Type can be set to `PreAuthenticatedHeader` to enable enterprise SSO authentication mechanisms that rely on MarkLogic application-level authentication.  Otherwise set User-Auth-Type to match the authentication mechanism used in the marklogic-geo-data-services app server in MarkLogic.
         * User-Hostname is the host running the MarkLogic Server for user queries (may be the same as hostname above)
-        * User-Port is the port for the application server that will use the custom authentication mechanism for GeoAxis.
+        * User-Port is the port for the application server running the marklogic-geo-data-services app server in MarkLogic.
     8. Click `save` button
         * This should show you a list of available Service Descriptors for publishing.
-5. Setup GeoServer Security 
+5. Setup GeoServer Security (Optional)
+    This section is necessary if you are using the `PreAuthenticatedHeader` authentication mechanism.
     1. Create a new Role called "USERS"
         1. On the left column, click the `Users, Groups, Roles` link.
         2. Click on the `Roles` tab
