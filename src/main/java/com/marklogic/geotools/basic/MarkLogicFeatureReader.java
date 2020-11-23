@@ -186,16 +186,21 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     		ArrayList<String> temp = new ArrayList<String>();
     		for (String prop : query.getPropertyNames()) {
     			if (!prop.equals(geometryColumn)) temp.add(prop);
-    		}
-    		String[] propertyNames = temp.toArray(new String[1]);
-    		
-    		String outFields = "";
-    		for (int i = 0; i < propertyNames.length; i++) {
-    			if (i > 0) outFields += ", ";
-    			String propName = propertyNames[i];
-    			outFields += propName;
-    		}
-    		queryProperty.set("outFields", nodeFactory.textNode(outFields));
+			}
+			if (temp.size() > 0) {
+				String[] propertyNames = temp.toArray(new String[temp.size()]);
+				
+				String outFields = "";
+				for (int i = 0; i < propertyNames.length; i++) {
+					if (i > 0) outFields += ", ";
+					String propName = propertyNames[i];
+					outFields += propName;
+				}
+				queryProperty.set("outFields", nodeFactory.textNode(outFields));
+			}
+			else {
+				queryProperty.set("outFields", nodeFactory.textNode(""));
+			}
     	}
     	
     	//sort
