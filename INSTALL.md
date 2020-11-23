@@ -178,8 +178,10 @@ or
         * User-Port is the port for the application server running the marklogic-geo-data-services app server in MarkLogic.
     8. Click `save` button
         * This should show you a list of available Service Descriptors for publishing.
-5. Setup GeoServer Security (Optional)
+5. Setup GeoServer Security (Optional).
+
     This section is necessary if you are using the `PreAuthenticatedHeader` authentication mechanism.
+    
     1. Create a new Role called "USERS"
         1. On the left column, click the `Users, Groups, Roles` link.
         2. Click on the `Roles` tab
