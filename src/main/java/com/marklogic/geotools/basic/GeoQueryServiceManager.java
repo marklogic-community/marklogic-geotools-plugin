@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marklogic.client.io.JacksonHandle;
 
 import org.geotools.feature.NameImpl;
@@ -50,6 +51,15 @@ public class GeoQueryServiceManager extends ResourceManager {
     //handle old and new output formats from gds
     if (layerResult == null) {
         layerResult = result;
+        if (layerResult instanceof ObjectNode) {
+            ObjectNode objectResult = (ObjectNode)layerResult;
+            if (objectResult.has("$version")) {
+                objectResult.remove("$version");
+            }
+            if (objectResult.has("$timestamp")) {
+                objectResult.remove("$timestamp");
+            }
+        }
     }
 
     ArrayList<Name> layerNames = new ArrayList<Name>();
