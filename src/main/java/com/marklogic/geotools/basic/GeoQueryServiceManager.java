@@ -60,9 +60,11 @@ public class GeoQueryServiceManager extends ResourceManager {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(node.toString());
         }
-        Name n = new NameImpl(namespaceURI, node.asText());
-
-        layerNames.add(n);
+        String serviceName = node.asText();
+        if (!(serviceName.equals("$version") || serviceName.equals("$timestamp"))) {
+            Name n = new NameImpl(namespaceURI, serviceName);
+            layerNames.add(n);
+        }
     }
     return layerNames;
    }
