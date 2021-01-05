@@ -45,9 +45,16 @@ public class GeoQueryServiceManager extends ResourceManager {
     
     JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
     JsonNode result = resultHandle.get();
+    JsonNode layerResult = result.get("layerNames");
+
+    //handle old and new output formats from gds
+    if (layerResult == null) {
+        layerResult = result;
+    }
+
     ArrayList<Name> layerNames = new ArrayList<Name>();
     
-    Iterator<JsonNode> elements = result.elements();
+    Iterator<JsonNode> elements = layerResult.elements();
     while (elements.hasNext()) {
         JsonNode node = elements.next();
         if (LOGGER.isLoggable(Level.FINE)) {
