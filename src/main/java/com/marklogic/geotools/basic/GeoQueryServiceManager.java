@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marklogic.client.io.JacksonHandle;
 
 import org.geotools.feature.NameImpl;
@@ -45,17 +46,35 @@ public class GeoQueryServiceManager extends ResourceManager {
     
     JacksonHandle resultHandle = services.post(params,new JacksonHandle(json), new JacksonHandle());
     JsonNode result = resultHandle.get();
+    JsonNode layerResult = result.get("layerNames");
+
+    //handle old and new output formats from gds
+    if (layerResult == null) {
+        layerResult = result;
+        if (layerResult instanceof ObjectNode) {
+            ObjectNode objectResult = (ObjectNode)layerResult;
+            if (objectResult.has("$version")) {
+                objectResult.remove("$version");
+            }
+            if (objectResult.has("$timestamp")) {
+                objectResult.remove("$timestamp");
+            }
+        }
+    }
+
     ArrayList<Name> layerNames = new ArrayList<Name>();
     
-    Iterator<JsonNode> elements = result.elements();
+    Iterator<JsonNode> elements = layerResult.elements();
     while (elements.hasNext()) {
         JsonNode node = elements.next();
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(node.toString());
         }
-        Name n = new NameImpl(namespaceURI, node.asText());
-
-        layerNames.add(n);
+        String serviceName = node.asText();
+        if (!(serviceName.equals("$version") || serviceName.equals("$timestamp"))) {
+            Name n = new NameImpl(namespaceURI, serviceName);
+            layerNames.add(n);
+        }
     }
     return layerNames;
    }
