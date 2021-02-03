@@ -211,7 +211,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 		JsonNode schema = metadata.get("fields");
 		
 		idField = metadata.get("idField").asText();
-		builder.add(idField, Integer.class);
+		builder.add(idField, Long.class);
 		
  		Class<?> geoBinding = geometryToClass(metadata.get("geometryType").asText());
  		//AttributeDescriptor geoAttrDesc = buildAttributeDescriptor(geometryColumn, geoBinding);
@@ -289,7 +289,7 @@ public class MarkLogicBasicFeatureSource extends ContentFeatureSource {
 			binding = String.class;
 		}
 		else if ("Integer".equalsIgnoreCase(type)) {
-			binding = Integer.class;
+			binding = Long.class;
 		}
 		else if ("Double".equalsIgnoreCase(type)) {
 			binding = Double.class;
