@@ -152,7 +152,7 @@ or
 3. Create your workspace(s) where you are going to use the MarkLogic DataStore
     1. On the welcome page, click `Create workspaces`
     2. Provide a workspace name (eg. "MarkLogic")
-    3. Provide a Namespace URI  (eg. "http://marklogic.com/geoserver/som/wfs")
+    3. Provide a Namespace URI  (eg. "http://marklogic.com/geoserver/wfs")
     4. If you desire this to be the default workspace, click the corresponding checkbox.
     5. Click the `submit` button
     6. Click on the newly created workspace name on the `Workspaces` list
@@ -172,7 +172,7 @@ or
         * Port is the geo-data-services-admin server on your MarkLogic Cluster
         * Username is an administrative user on the MarkLogic Cluster
         * Password is the adminsitrative user's password on the MarkLogic Cluster
-        * Database is the corresponding database (eg. `som-content`)
+        * Database is the corresponding database (eg. `my-content`)
         * User-Auth-Type can be set to `PreAuthenticatedHeader` to enable enterprise SSO authentication mechanisms that rely on MarkLogic application-level authentication.  Otherwise set User-Auth-Type to match the authentication mechanism used in the marklogic-geo-data-services app server in MarkLogic.
         * User-Hostname is the host running the MarkLogic Server for user queries (may be the same as hostname above)
         * User-Port is the port for the application server running the marklogic-geo-data-services app server in MarkLogic.
