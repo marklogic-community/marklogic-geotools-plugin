@@ -77,8 +77,12 @@ public class MarkLogicFeatureReader implements FeatureReader<SimpleFeatureType, 
     
     MarkLogicFeatureReader(ContentState contentState, Query query, String serviceName, int layerId, String idField, String geometryColumn) throws IOException {
         this.state = contentState;
+			if (query != null) {
 			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.toString());
-			  LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.getSortBy()[0].toString());
+			  if (query.getSortBy() != null && query.getSortBy().length > 0) {
+			  	LOGGER.log(Level.INFO, () -> "FeatureReader Query:\n" + query.getSortBy()[0].toString());
+			  }
+			}
         
 	    this.serviceName = serviceName;
 	    this.layerId = layerId;
