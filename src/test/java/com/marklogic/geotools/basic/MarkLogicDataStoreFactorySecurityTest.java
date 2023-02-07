@@ -2,7 +2,11 @@ package com.marklogic.geotools.basic;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
-import org.geotools.data.*;
+import org.geotools.data.DataStore;
+import org.geotools.data.DataStoreFinder;
+import org.geotools.data.FeatureReader;
+import org.geotools.data.Query;
+import org.geotools.data.Transaction;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.NameImpl;
 import org.junit.Test;
@@ -14,7 +18,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.assertNotEquals;
@@ -35,6 +42,12 @@ public class MarkLogicDataStoreFactorySecurityTest  {
         adminClient = DatabaseClientFactory.newClient(hostname, port, database, auth);
     }
 
+	private Map<String, ?> propertiesToMap(Properties props) {
+		Map<String, Serializable> map = new HashMap<>();
+		props.keySet().forEach(key -> map.put((String)key, props.getProperty((String)key)));
+		return map;
+	}
+
     public Properties loadProperties() throws IOException {
         InputStream propFile = MarkLogicDataStoreFactorySecurityTest.class.getResourceAsStream("marklogic-security.properties");
         Properties p = new Properties();
@@ -45,9 +58,7 @@ public class MarkLogicDataStoreFactorySecurityTest  {
     @Test
     public void testDataStoreFactory() throws IOException {
         System.out.println("testDataStoreFactory start\n");
-        Properties p = loadProperties();
-
-        DataStore store = DataStoreFinder.getDataStore(p);
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
 
         System.out.println(store);
         String[] names = store.getTypeNames();
@@ -77,9 +88,8 @@ public class MarkLogicDataStoreFactorySecurityTest  {
     private void _testSimpleFeatureReader(Query q) throws IOException {
         System.out.println("testSimpleFeatureReader start\n");
         long startTime = System.currentTimeMillis();
-        Properties p = loadProperties();
 
-        DataStore store = DataStoreFinder.getDataStore(p);
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
         SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
 

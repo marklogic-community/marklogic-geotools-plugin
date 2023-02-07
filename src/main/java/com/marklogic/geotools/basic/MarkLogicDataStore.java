@@ -53,7 +53,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 	 * @param map Map<String, Serializable> with necessary details to create the data store.
 	 * @throws IOException
 	 */
-	public MarkLogicDataStore(Map<String, Serializable> map) throws IOException{
+	public MarkLogicDataStore(Map<String, ?> map) throws IOException{
 		// extract properties
 		String host = (String) MarkLogicDataStoreFactory.ML_HOST_PARAM.lookUp(map);
 		Integer port = (Integer) MarkLogicDataStoreFactory.ML_PORT_PARAM.lookUp(map);
@@ -70,12 +70,12 @@ public class MarkLogicDataStore extends ContentDataStore {
 
 		this.queryCapabilities = buildQueryCapabilities();
 		this.filterCapabilities = buildFilterCapabilities();
-		
+
 		setFilterFactory(CommonFactoryFinder.getFilterFactory(null));
         setGeometryFactory(new GeometryFactory());
         setFeatureTypeFactory(new FeatureTypeFactoryImpl());
         setFeatureFactory(CommonFactoryFinder.getFeatureFactory(null));
-		
+
 		setupClient(host,port,new DatabaseClientFactory.DigestAuthContext(username,password), database);
 		setNamespaceURI(namespace);
 		setupGeoQueryServices();
@@ -102,7 +102,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 			public boolean supportsSorting(SortBy[] sortAttributes) {return true;}
 		};
 	}
-	
+
 	public FilterCapabilities buildFilterCapabilities() {
 		FilterCapabilities capabilities = new FilterCapabilities();
 		capabilities.addAll(FilterCapabilities.LOGICAL_OPENGIS);
@@ -120,7 +120,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 		capabilities.addType(FilterCapabilities.SPATIAL_WITHIN);
 		return capabilities;
 	}
-	
+
 	public QueryCapabilities getQueryCapabilities() {
 		if (queryCapabilities == null) {
 			queryCapabilities = buildQueryCapabilities();
@@ -131,14 +131,14 @@ public class MarkLogicDataStore extends ContentDataStore {
 	public UserConnectionDetails getUserConnectionDetails() {
 		return this.userConnectionDetails;
 	}
-	
+
 	public FilterCapabilities getFilterCapabilities() {
 		if (filterCapabilities == null) {
 			filterCapabilities = buildFilterCapabilities();
 		}
 		return filterCapabilities;
 	}
-	
+
 	private void setupClient(String host, int port, DatabaseClientFactory.SecurityContext securityContext, String database) {
 		if (Objects.nonNull(database)) {
 			client = DatabaseClientFactory.newClient(host, port, database, securityContext);
@@ -146,15 +146,15 @@ public class MarkLogicDataStore extends ContentDataStore {
 			client = DatabaseClientFactory.newClient(host, port, securityContext);
 		}
 	}
-	
+
 	private void setupGeoQueryServices() {
 		geoQueryServices = new GeoQueryServiceManager(client);
 	}
-	
+
 	DatabaseClient getClient() {
 		return client;
 	}
-	
+
 	GeoQueryServiceManager getGeoQueryServiceManager() {
 		return geoQueryServices;
 	}
@@ -172,9 +172,9 @@ public class MarkLogicDataStore extends ContentDataStore {
 			LOGGER.fine("Datastore namespace: " + getNamespaceURI());
 			LOGGER.fine("**************************************************************************");
 		}
-		
+
 		GeoQueryServiceManager geoQueryServices = new GeoQueryServiceManager(client);
-		
+
 		try {
 			List<Name> nameList;
 			nameList = geoQueryServices.getLayerNames(namespaceURI);
@@ -186,14 +186,14 @@ public class MarkLogicDataStore extends ContentDataStore {
 			}
 
 			return nameList;
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return new ArrayList<Name>();
 		}
     }
-	
+
 	@Override
 	public List<Name> getNames() throws IOException {
 	    String[] typeNames = getTypeNames();
@@ -203,7 +203,7 @@ public class MarkLogicDataStore extends ContentDataStore {
 	    }
 	    return names;
 	}
-	
+
 	@Override
   protected ContentFeatureSource createFeatureSource(ContentEntry entry) throws IOException {
 		if (LOGGER.isLoggable(Level.FINE)) {

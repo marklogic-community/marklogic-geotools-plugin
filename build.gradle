@@ -1,50 +1,79 @@
 plugins {
-    id 'java'
-    id 'jacoco'
+	id 'java'
+	id 'jacoco'
+	id "net.saliman.properties" version "1.5.1"
+	id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 group 'com.marklogic.geotools'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
 
 repositories {
     maven {
         url 'https://repo.osgeo.org/repository/release/'
     }
     mavenCentral()
-    jcenter()
 }
 
 ext {
-    $geotoolsVersion = '22.0'
-    $jtsVersion = '1.16.1'
-    $springSecurityVersion = '5.1.5.RELEASE'
-    $springVersion = '5.1.6.RELEASE'
+	// Matching up the versions to those found in geoserver-2.22.1
+	geotoolsVersion = '28.1'
+	jtsVersion = '1.19.0'
+	springSecurityVersion = '5.1.13.RELEASE'
+	springVersion = '5.2.22.RELEASE'
 }
 
 dependencies {
-    compile group: 'org.geotools', name: 'gt-geojson', version: $geotoolsVersion
-    compile group: 'org.geotools', name: 'gt-main', version: $geotoolsVersion
-    compile group: 'org.geotools', name: 'gt-cql', version: $geotoolsVersion
-    compile group: 'org.geotools', name: 'gt-epsg-hsql', version: $geotoolsVersion
-    compile group: 'org.geotools', name: 'gt-jdbc', version: $geotoolsVersion
-    compile group: 'org.locationtech.jts', name: 'jts-core', version: $jtsVersion
-    compile group: 'com.marklogic', name: 'marklogic-client-api', version:'4.0.4'
-    compile group: 'org.apache.commons', name: 'commons-collections4', version:'4.2'
-    compile group: 'org.glassfish.jersey.core', name:'jersey-client',version:'2.25.1'
-    testCompile group: 'org.slf4j', name:'slf4j-api', version:'1.7.25'
-    testCompile group: 'org.slf4j', name:'slf4j-log4j12', version:'1.7.25'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    compile group: 'org.springframework', name: 'spring-core', version: $springVersion
-    compile group: 'org.springframework', name: 'spring-beans', version: $springVersion
-    compile group: 'org.springframework', name: 'spring-context', version: $springVersion
-    compile group: 'org.springframework.security', name: 'spring-security-bom', version: $springSecurityVersion
-    compile group: 'org.springframework.security', name: 'spring-security-web', version: $springSecurityVersion
-    compile group: 'org.springframework.security', name: 'spring-security-config', version: $springSecurityVersion
-    compile group: 'org.springframework.security', name: 'spring-security-core', version: $springSecurityVersion
+	// Each compileOnly dependency is already part of the geoserver webapp
+	compileOnly "org.geotools:gt-cql:${geotoolsVersion}"
+	compileOnly "org.geotools:gt-epsg-hsql:${geotoolsVersion}"
+	compileOnly "org.geotools:gt-jdbc:${geotoolsVersion}"
+	compileOnly "org.geotools:gt-main:${geotoolsVersion}"
+	compileOnly "org.springframework:spring-context:${springVersion}"
+	compileOnly "org.springframework.security:spring-security-bom:${springSecurityVersion}"
+	compileOnly "org.springframework.security:spring-security-core:${springSecurityVersion}"
+	compileOnly "org.springframework.security:spring-security-config:${springSecurityVersion}"
+	compileOnly "org.springframework.security:spring-security-web:${springSecurityVersion}"
+	compileOnly "org.locationtech.jts:jts-core:${jtsVersion}"
+	compileOnly "org.apache.commons:commons-collections4:4.2"
+	compileOnly "com.fasterxml.jackson.core:jackson-databind:2.13.4.2"
+
+	// These are the only dependencies needed at runtime, in addition to the compileOnly ones above that are already
+	// present in the geoserver webapp.
+	implementation "com.marklogic:marklogic-client-api:6.1.0"
+	implementation "org.geotools:gt-geojson:${geotoolsVersion}"
+
+	// Have to repeat some compileOnly dependencies so the tests can compile
+	testImplementation "org.geotools:gt-cql:${geotoolsVersion}"
+	testImplementation "org.geotools:gt-epsg-hsql:${geotoolsVersion}"
+	testImplementation "org.geotools:gt-jdbc:${geotoolsVersion}"
+	testImplementation "org.geotools:gt-main:${geotoolsVersion}"
+	testImplementation "org.springframework.security:spring-security-core:${springSecurityVersion}"
+	testImplementation "com.fasterxml.jackson.core:jackson-databind:2.13.4.2"
+	testImplementation "org.glassfish.jersey.core:jersey-client:2.25.1"
+
+	testImplementation "junit:junit:4.13.2"
+	testImplementation "ch.qos.logback:logback-classic:1.3.5"
+	testImplementation "org.slf4j:jcl-over-slf4j:1.7.36"
+	testImplementation "org.slf4j:slf4j-api:1.7.36"
 }
 
+shadowJar {
+	archiveClassifier.set("")
+}
+
+task deploy(type: Copy, dependsOn: ["shadowJar"]) {
+	from("build/libs") {
+		include "${project.name}-${version}.jar"
+	}
+	into "${geoserverHome}/webapps/geoserver/WEB-INF/lib"
+}
 
 jacoco {
     toolVersion = "0.8.4"
@@ -72,59 +101,4 @@ jacocoTestCoverageVerification {
             }
         }
     }
-}
-
-def geoServerLib = "${geoServerHome}/webapps/geoserver/WEB-INF/lib"
-
-/**
- * This task deletes any conflicting jars from geoserver
- * This list will need to be updated upon ANY change to geoserver version
- */
-task deleteConflictingGeoServerJars(type: Delete) {
-    delete fileTree(dir: geoServerLib, include: ["slf4j-api-1.6.4.jar", "jts-core-1.16.0.jar","commons-collections4-4.1.jar"])
-    delete fileTree(dir: geoServerLib, include: ["spring-aop-5.1.1.RELEASE.jar", "spring-beans-5.1.1.RELEASE.jar", "spring-context-5.1.1.RELEASE.jar",
-                                                 "spring-core-5.1.1.RELEASE.jar", "spring-expression-5.1.1.RELEASE.jar", "spring-jcl-5.1.1.RELEASE.jar",
-                                                 "spring-web-5.1.1.RELEASE.jar"])
-}
-
-task deployGeoServerPluginJars(type: Copy) {
-    outputs.upToDateWhen {
-        false
-    }
-    from("build/libs") {
-        include '*.jar'
-    }
-    from configurations.default {
-        include '*.jar'
-        exclude "commons-lang3-3.7.jar", "jackson-core-2.9.4.jar"
-    }
-    into geoServerLib
-}
-
-task deploy(dependsOn: ['deleteConflictingGeoServerJars', 'deployGeoServerPluginJars']) {}
-
-task buildZip(type: Zip, dependsOn: ['build']) {
-    from 'build.gradle'
-    from 'gradle.properties'
-    from 'gradlew'
-    from 'gradlew.bat'
-    from 'settings.gradle'
-    from 'LICENSE'
-    from 'README.md'
-    into ('gradle/wrapper') { from "gradle/wrapper" }
-    into ('lib') { from "build/libs" }
-    into ('dependencies') {
-        from configurations.default {
-            include '*.jar'
-            exclude "commons-lang3-3.7.jar", "jackson-core-2.9.4.jar"
-        }
-    }
-    into ('src') { from "src" }
-}
-
-task deployOffline(type: Copy, dependsOn: ['deleteConflictingGeoServerJars']) {
-    outputs.upToDateWhen {false}
-    from('lib') { include '*.jar' }
-    from('dependencies') { include '*.jar' }
-    into geoServerLib
 }
