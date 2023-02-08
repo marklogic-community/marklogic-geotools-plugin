@@ -8,39 +8,11 @@
  */
 package com.marklogic.geotools.basic;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.DigestAuthContext;
-import com.marklogic.client.io.SearchHandle;
-import com.marklogic.client.query.QueryManager;
-import com.marklogic.client.query.StructuredQueryDefinition;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureReader;
@@ -48,7 +20,6 @@ import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
 import org.geotools.data.jdbc.FilterToSQL;
-import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.FeatureCollection;
@@ -58,13 +29,13 @@ import org.geotools.filter.text.cql2.CQL;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.Envelope2D;
-import org.geotools.geometry.GeometryFactoryFinder;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.util.factory.Hints;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.json.simple.JSONObject;
 import org.junit.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -77,13 +48,32 @@ import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.spatial.Intersects;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 public class MarkLogicTest {
 
 	protected DatabaseClient client;
 	protected FilterFactory2 filterFactory;
 	protected Invocation.Builder invocationBuilder;
 	JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
-	
+
 	public MarkLogicTest() throws IOException {
         // create client
         Properties p = loadProperties();
@@ -96,8 +86,8 @@ public class MarkLogicTest {
         client = DatabaseClientFactory.newClient(hostname, port, database, auth);
 
         filterFactory = CommonFactoryFinder.getFilterFactory2();
-        
-        
+
+
 		Client client = ClientBuilder.newClient();
 		HttpAuthenticationFeature authentication = HttpAuthenticationFeature.digest(username, password);
 		client.register(authentication);
@@ -113,15 +103,21 @@ public class MarkLogicTest {
         p.load(propFile);
         return p;
 	}
-	
-    @Test
+
+	private Map<String, ?> propertiesToMap(Properties props) {
+		Map<String, Serializable> map = new HashMap<>();
+		props.keySet().forEach(key -> map.put((String)key, props.getProperty((String)key)));
+		return map;
+	}
+
+	@Test
     public void test() throws Exception {
     	/*
         List<String> cities = new ArrayList<>();
         InputStream propFile = MarkLogicTest.class.getResourceAsStream("marklogic.properties");
         Properties p = new Properties();
         p.load(propFile);
-        
+
         try (FileReader reader = new FileReader(file)) {
             CsvReader locations = new CsvReader(reader);
             locations.readHeaders();
@@ -156,14 +152,12 @@ public class MarkLogicTest {
       assertEquals( 14.6284410000001, ((Point)sf.getAttribute("geometry")).getX(), 0.0001);
       */
     }
-    
+
     @Test
     public void testDataStoreFactory() throws IOException {
         System.out.println("testDataStoreFactory start\n");
-        Properties p = loadProperties();
-        
-        DataStore store = DataStoreFinder.getDataStore(p);
-        
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
+
         System.out.println(store);
         String[] names = store.getTypeNames();
         assertNotEquals("At least one type is retrieved", 0, names.length);
@@ -177,9 +171,8 @@ public class MarkLogicTest {
     @Test
     public void testSchema() throws IOException {
         System.out.println("testSchema start\n");
-        Properties p = loadProperties();
 
-        DataStore store = DataStoreFinder.getDataStore(p);
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
 
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
 
@@ -220,13 +213,12 @@ public class MarkLogicTest {
         // example2 end
         System.out.println("\ntestSchema end\n");
     }
-    
+
     @Test
     public void testCount() throws Exception {
     	System.out.println("testBounds start\n");
-        Properties p = loadProperties();
 
-        DataStore store = DataStoreFinder.getDataStore(p);
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
 
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
         SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
@@ -234,13 +226,12 @@ public class MarkLogicTest {
         System.out.println("TEST_JOIN_0 count: " + count);
         System.out.println("\ntestCount end\n");
     }
-    
+
     @Test
     public void testBounds() throws IOException {
         System.out.println("testBounds start\n");
-        Properties p = loadProperties();
 
-        DataStore store = DataStoreFinder.getDataStore(p);
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
 
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
 
@@ -252,7 +243,7 @@ public class MarkLogicTest {
         // example2 end
         System.out.println("\ntestBounds end\n");
     }
-    
+
     @Test
     public void testSimpleFeatureReader() throws IOException {
         Query q = new Query("TEST_JOIN_0", Filter.INCLUDE);
@@ -260,13 +251,12 @@ public class MarkLogicTest {
         q.setStartIndex(1);
     	_testSimpleFeatureReader(q);
     }
-    
+
     private void _testSimpleFeatureReader(Query q) throws IOException {
         System.out.println("testSimpleFeatureReader start\n");
         long startTime = System.currentTimeMillis();
-        Properties p = loadProperties();
-        
-        DataStore store = DataStoreFinder.getDataStore(p);
+
+        DataStore store = DataStoreFinder.getDataStore(propertiesToMap(loadProperties()));
         SimpleFeatureType type = store.getSchema("TEST_JOIN_0");
         SimpleFeatureSource source = store.getFeatureSource(new NameImpl("TEST_JOIN_0"));
 
@@ -292,15 +282,15 @@ public class MarkLogicTest {
         System.out.println("\ntestSimpleFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime)/1000 + "\n");
     }
 
-    @Test 
+    @Test
     public void testFilterToSQLFeatureReader() {
     	System.out.println("testFilterToSQLFeatureReader start\n");
     	long startTime = System.currentTimeMillis();
-    	
+
     	try {
     		Filter f = CQL.toFilter("IS_CONCEALED >= 1 AND OBJECTID is null");
     		System.out.println(f.toString());
-    		
+
     		Query q = new Query("TEST_JOIN_0", f);
     		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
     		_testSimpleFeatureReader(q);
@@ -308,19 +298,19 @@ public class MarkLogicTest {
     	catch(Exception ex) {
     		ex.printStackTrace();
     	}
-    	
+
     	System.out.println("\ntestFilterToSQLFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
     }
-    
-    @Test 
+
+    @Test
     public void testFilterToSQLLikeFeatureReader() {
     	System.out.println("testFilterToSQLLikeFeatureReader start\n");
     	long startTime = System.currentTimeMillis();
-    	
+
     	try {
     		Filter f = CQL.toFilter("ACTIVITY_TYPE LIKE '%AGRICULTURE%'");
     		System.out.println(f.toString());
-    		
+
     		Query q = new Query("TEST_JOIN_0", f);
     		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
     		_testSimpleFeatureReader(q);
@@ -328,33 +318,33 @@ public class MarkLogicTest {
     	catch(Exception ex) {
     		ex.printStackTrace();
     	}
-    	
+
     	System.out.println("\ntestFilterToSQLLikeFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
     }
-    
+
     @Test
     public void testFilterToSQL() {
     	System.out.println("testFilterToSQL start\n");
     	long startTime = System.currentTimeMillis();
-    	
+
     	try {
     		Filter f = CQL.toFilter("attName >= 5");
-    		//Filter geo = 
+    		//Filter geo =
     		StringWriter writer = new StringWriter();
     		FilterToSQL f2s = new FilterToSQL(writer);
     		//String sql = f2s.encodeToString(f);l
     		f.accept(f2s, null);
     		System.out.println(writer.getBuffer());
-    		
+
     		//f.accept(f2s, null);
     		    	}
     	catch(Exception ex) {
     		ex.printStackTrace();
     	}
     	System.out.println("\ntestFilterToSQL elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
-    	
+
     }
-    
+
 	@Test
 	public void testIntersects() {
 		System.out.println("testIntersects start\n");
@@ -378,7 +368,7 @@ public class MarkLogicTest {
 		System.out.println("Esri query parameters: " + queryNode.toString());
 		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
 		//properly
-		
+
 
 /*		QueryManager qm = client.newQueryManager();
 		SearchHandle results = new SearchHandle();
@@ -389,14 +379,14 @@ public class MarkLogicTest {
 */		// testIntersects end
 		System.out.println("\ntestIntersects elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
-	
+
 	@Test
 	public void testBBOX() {
 		System.out.println("testBBOX start\n");
 		long startTime = System.currentTimeMillis();
 
 		CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
-		
+
 		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
 				filterFactory.literal(new Envelope2D(
 						new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
@@ -406,12 +396,12 @@ public class MarkLogicTest {
 		ObjectNode queryNode = nodeFactory.objectNode();
 		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w, queryNode);
 		Object o = bbox.accept(filterToMarklogic, null);
-		
+
 		System.out.println("Output of SQL Portion:" + w.toString());
 		System.out.println("Esri query parameters: " + queryNode.toString());
 		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
 		//properly
-		
+
 
 /*		QueryManager qm = client.newQueryManager();
 		SearchHandle results = new SearchHandle();
@@ -422,12 +412,12 @@ public class MarkLogicTest {
 */		// testIntersects end
 		System.out.println("\testBBOX elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
-	
+
 	@Test
 	public void testBBOXAndPropertyWithFeatureReader() throws Exception {
 		System.out.println("testBBOXAndPropertyWithFeatureReader start\n");
 		long startTime = System.currentTimeMillis();
-		
+
 		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
 			filterFactory.literal(new Envelope2D(
 					new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
@@ -435,56 +425,56 @@ public class MarkLogicTest {
 					)));
 		Filter f = CQL.toFilter("OBJECTID is not null");
 		System.out.println(f.toString());
-		
+
 		List<Filter> filterList = new ArrayList<Filter>();
 		filterList.add(bbox);
 		filterList.add(f);
-		
+
 		And andFilter = filterFactory.and(filterList);
 		Query q = new Query("TEST_JOIN_0", andFilter);
-		
+
 		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
-		
+
 		_testSimpleFeatureReader(q);
 		System.out.println("\ntestBBOXAndPropertyWithFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
-	
+
 	@Test
 	public void testBBOXWithFeatureReader() throws IOException {
 		System.out.println("testBBOX start\n");
 		long startTime = System.currentTimeMillis();
-		
+
 		BBOX bbox = filterFactory.bbox(filterFactory.property("geom"),
 				filterFactory.literal(new Envelope2D(
 						new DirectPosition2D(DefaultGeographicCRS.WGS84,0.0, 10.0),
 						new DirectPosition2D(DefaultGeographicCRS.WGS84,10.0, 20.0)
 						)));
-		
+
 		Query q = new Query("TEST_JOIN_0", bbox);
 		q.setSortBy(new SortBy[] {SortBy.NATURAL_ORDER});
 		_testSimpleFeatureReader(q);
 		System.out.println("\testBBOXWithFeatureReader elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
-	
+
 	@Test
 	public void testPoint() {
 		System.out.println("testPoint start\n");
 		long startTime = System.currentTimeMillis();
 
 		CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
-		
+
 		Intersects intersects = filterFactory.intersects(filterFactory.property("geom"),
 				filterFactory.literal(new GeometryFactory().createPoint(new Coordinate(-118.005124, 34.110102))));
 		StringWriter w = new StringWriter();
 		ObjectNode queryNode = nodeFactory.objectNode();
 		FilterToMarkLogic filterToMarklogic = new FilterToMarkLogic(w, queryNode);
 		Object o = intersects.accept(filterToMarklogic, null);
-		
+
 		System.out.println("Output of SQL Portion:" + w.toString());
 		System.out.println("Esri query parameters: " + queryNode.toString());
 		//then we'll call the service, but right now we just want to debug and see if we're getting this thing to work
 		//properly
-		
+
 
 /*		QueryManager qm = client.newQueryManager();
 		SearchHandle results = new SearchHandle();
@@ -495,7 +485,7 @@ public class MarkLogicTest {
 */		// testIntersects end
 		System.out.println("\testPoint elapsed Time: " + (System.currentTimeMillis() - startTime) / 1000 + "\n");
 	}
-	
+
 /*
     @Test
     public void example4() throws Exception {

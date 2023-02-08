@@ -23,7 +23,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	private static final Logger LOGGER = Logging.getLogger(MarkLogicFeatureReader.class);
 
 	Boolean isAvailable = null;
-	public static final Param ML_HOST_PARAM = 
+	public static final Param ML_HOST_PARAM =
 			new Param(
 					"hostname",
 					String.class,
@@ -137,7 +137,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	}
 
 	@Override
-	public boolean canProcess(Map<String, Serializable> params) {
+	public boolean canProcess(Map<String, ?> params) {
 		try {
 			String host = (String) ML_HOST_PARAM.lookUp(params);
 			if (host == null) return false;
@@ -177,7 +177,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	}
 
 	@Override
-	public DataStore createDataStore(Map<String, Serializable> params) throws IOException {
+	public DataStore createDataStore(Map<String, ?> params) throws IOException {
 		for (String k : params.keySet()) {
 			LOGGER.log(Level.INFO, () -> "param key: {}" + k);
 		}
@@ -185,8 +185,7 @@ public class MarkLogicDataStoreFactory implements DataStoreFactorySpi {
 	}
 
 	@Override
-	public DataStore createNewDataStore(Map<String, Serializable> params) throws IOException {
+	public DataStore createNewDataStore(Map<String, ?> params) {
 		throw new UnsupportedOperationException("MarkLogic Datastore is read only");
 	}
-
 }

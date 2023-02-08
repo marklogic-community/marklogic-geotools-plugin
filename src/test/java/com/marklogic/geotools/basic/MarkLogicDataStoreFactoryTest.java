@@ -5,15 +5,15 @@ import org.geotools.data.DataStoreFactorySpi;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class MarkLogicDataStoreFactoryTest {
 
