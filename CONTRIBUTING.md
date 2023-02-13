@@ -11,7 +11,7 @@ Next, Geoserver seems happier if `GEOSERVER_HOME` is defined, so add that to you
 
     export GEOSERVER_HOME=/path/to/geoserver
 
-Next, create `gradle-local.properties` in the same directory as this file and add the following to it:
+Next, create `gradle-local.properties` in the same directory where you have checked out this project, and add the following to it:
 
     geoserverHome=/path/to/geoserver
 
@@ -23,7 +23,9 @@ installation:
 You can now startup geoserver (you may need to do a `chmod 755 $GEOSERVER_HOME/bin/*.sh` to make these files 
 executable):
 
-    $GEOSERVER/bin/startup.sh
+    $GEOSERVER_HOME/bin/startup.sh
+
+Once the server has completed started, point your browser to http://localhost:8080/geoserver/web to begin using the GeoServer.
 
 To learn how to setup a workspace and data store, go to the "Step 4. Setup GeoServer" section in the INSTALL.md guide. 
 It's recommended to point the data store against the test app deployed by the [marklogic-geo-data-services]
