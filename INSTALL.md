@@ -173,7 +173,9 @@ or
         * Username is an administrative user on the MarkLogic Cluster
         * Password is the adminsitrative user's password on the MarkLogic Cluster
         * Database is the corresponding database (eg. `my-content`)
-        * User-Auth-Type can be set to `PreAuthenticatedHeader` to enable enterprise SSO authentication mechanisms that rely on MarkLogic application-level authentication.  Otherwise set User-Auth-Type to match the authentication mechanism used in the marklogic-geo-data-services app server in MarkLogic.
+        * User-Auth-Type should the authentication mechanism used by the MarkLogic app server that has 
+					marklogic-geo-data-services installed; this will default to `digest`. Use `PreAuthenticatedHeader` instead 
+					if you are using MarkLogic application-layer authentication.
         * User-Hostname is the host running the MarkLogic Server for user queries (may be the same as hostname above)
         * User-Port is the port for the application server running the marklogic-geo-data-services app server in MarkLogic.
     8. Click `save` button
